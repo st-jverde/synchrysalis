@@ -7,7 +7,7 @@ export const useAudioEngine = () => {
   const [audioState, setAudioState] = useState<AudioState>({
     isPlaying: false,
     isRecording: false,
-    masterGainDb: -18,
+    masterGainDb: -45,
     sessionLength: null,
     elapsedTime: 0,
     recordingTime: 0,
@@ -63,7 +63,13 @@ export const useAudioEngine = () => {
           setAudioState(prev => {
             const newElapsedTime = prev.elapsedTime + 1;
             if (newElapsedTime >= audioState.sessionLength! * 60) {
-              stop();
+              // Stop playback when session time is reached
+              if (audioGraphRef.current) {
+                layers.forEach(layer => {
+                  audioGraphRef.current!.stopLayer(layer.id);
+                });
+              }
+              setAudioState(prev => ({ ...prev, isPlaying: false }));
               return prev;
             }
             return { ...prev, elapsedTime: newElapsedTime };
@@ -77,7 +83,7 @@ export const useAudioEngine = () => {
           const meterData = audioGraphRef.current.getMeterData();
           setMeterData(meterData);
         }
-      }, 50);
+      }, 100); // Less frequent updates for stability
 
     } catch (error) {
       console.error('Failed to start audio:', error);
@@ -113,7 +119,11 @@ export const useAudioEngine = () => {
   }, [layers]);
 
   // Add a new layer
-  const addLayer = useCallback((params: LayerParams) => {
+  const addLayer = useCallback(async (params: LayerParams) => {
+    if (!audioGraphRef.current || !isInitializedRef.current) {
+      await initializeAudio();
+    }
+
     if (!audioGraphRef.current) return;
 
     try {
@@ -122,7 +132,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to add layer:', error);
     }
-  }, []);
+  }, [initializeAudio]);
 
   // Update layer parameters
   const updateLayer = useCallback((id: string, updates: Partial<LayerParams>) => {
@@ -196,7 +206,11 @@ export const useAudioEngine = () => {
   }, []);
 
   // Load preset
-  const loadPreset = useCallback((layers: LayerParams[]) => {
+  const loadPreset = useCallback(async (layers: LayerParams[]) => {
+    if (!audioGraphRef.current || !isInitializedRef.current) {
+      await initializeAudio();
+    }
+
     if (!audioGraphRef.current) return;
 
     try {
@@ -219,7 +233,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to load preset:', error);
     }
-  }, [audioState.isPlaying, stop]);
+  }, [audioState.isPlaying, stop, initializeAudio]);
 
   // Cleanup on unmount
   useEffect(() => {

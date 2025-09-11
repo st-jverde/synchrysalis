@@ -24,8 +24,8 @@ export class AudioGraphManager {
 
   constructor() {
     // Initialize audio nodes
-    this.masterGain = new Tone.Gain(-18); // -18 dB default
-    this.limiter = new Tone.Limiter(-3); // -3 dB threshold
+    this.masterGain = new Tone.Gain(Tone.dbToGain(-45)); // -45 dB default for better headroom
+    this.limiter = new Tone.Limiter(-3); // -3 dB threshold for better distortion prevention
     this.meter = new Tone.Meter();
     this.reverb = new Tone.Reverb(1.5);
     this.reverbSend = new Tone.Gain(-20); // -20 dB reverb send
@@ -51,18 +51,23 @@ export class AudioGraphManager {
     nodes.gain.connect(this.masterGain);
     nodes.gain.connect(this.reverbSend);
 
-    // Apply initial parameters
-    this.updateLayerNodes(params.id, params);
-
-    return {
+    const nodeGroup = {
       id: params.id,
       nodes,
       dispose: () => this.disposeLayerNodes(params.id)
     };
+
+    // Add to nodes map first, then apply any remaining parameters
+    this.nodes.set(params.id, nodeGroup);
+
+    // Apply initial parameters (now that nodeGroup is in the map)
+    this.updateLayerNodes(params.id, params);
+
+    return nodeGroup;
   }
 
   private buildNodesForType(params: LayerParams) {
-    const gain = new Tone.Gain();
+    const gain = new Tone.Gain(Tone.dbToGain(params.gainDb)); // Set initial gain from params
     const panner = new Tone.Panner(params.pan);
     const filter = new Tone.Filter(800, 'lowpass');
 
@@ -144,7 +149,7 @@ export class AudioGraphManager {
 
     // Update basic parameters
     if (params.gainDb !== undefined) {
-      nodes.gain.gain.rampTo(Tone.gainToDb(params.gainDb), 0.1);
+      nodes.gain.gain.rampTo(Tone.dbToGain(params.gainDb), 0.1);
     }
 
     if (params.pan !== undefined) {
@@ -205,12 +210,18 @@ export class AudioGraphManager {
     const nodeGroup = this.nodes.get(id);
     if (!nodeGroup) return;
 
-    nodeGroup.nodes.oscillators.forEach(osc => {
-      osc.start();
-    });
+    try {
+      nodeGroup.nodes.oscillators.forEach(osc => {
+        if (osc.state !== 'started') {
+          osc.start();
+        }
+      });
 
-    if (nodeGroup.nodes.lfo) {
-      nodeGroup.nodes.lfo.start();
+      if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state !== 'started') {
+        nodeGroup.nodes.lfo.start();
+      }
+    } catch (error) {
+      console.error('Error starting layer:', error);
     }
   }
 
@@ -218,18 +229,24 @@ export class AudioGraphManager {
     const nodeGroup = this.nodes.get(id);
     if (!nodeGroup) return;
 
-    nodeGroup.nodes.oscillators.forEach(osc => {
-      osc.stop();
-    });
+    try {
+      nodeGroup.nodes.oscillators.forEach(osc => {
+        if (osc.state === 'started') {
+          osc.stop();
+        }
+      });
 
-    if (nodeGroup.nodes.lfo) {
-      nodeGroup.nodes.lfo.stop();
+      if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state === 'started') {
+        nodeGroup.nodes.lfo.stop();
+      }
+    } catch (error) {
+      console.error('Error stopping layer:', error);
     }
   }
 
   addLayer(params: LayerParams): AudioNodeGroup {
     const nodeGroup = this.createLayerNodes(params);
-    this.nodes.set(params.id, nodeGroup);
+    // nodeGroup is already added to the map in createLayerNodes
     return nodeGroup;
   }
 
@@ -263,17 +280,31 @@ export class AudioGraphManager {
   }
 
   setMasterGain(db: number): void {
-    this.masterGain.gain.rampTo(Tone.gainToDb(db), 0.1);
+    this.masterGain.gain.rampTo(Tone.dbToGain(db), 0.1);
   }
 
   getMeterData(): { rms: number; peak: number; left: number; right: number } {
-    const value = this.meter.getValue() as number;
-    return {
-      rms: value,
-      peak: value,
-      left: value,
-      right: value
-    };
+    try {
+      const value = this.meter.getValue() as number;
+      // Ensure we don't get NaN or infinite values
+      const safeValue = isFinite(value) ? value : -60;
+      const clampedValue = Math.max(-60, Math.min(0, safeValue));
+
+      return {
+        rms: clampedValue,
+        peak: clampedValue,
+        left: clampedValue,
+        right: clampedValue
+      };
+    } catch (error) {
+      console.error('Error getting meter data:', error);
+      return {
+        rms: -60,
+        peak: -60,
+        left: -60,
+        right: -60
+      };
+    }
   }
 
   getDestination(): MediaStreamAudioDestinationNode {
