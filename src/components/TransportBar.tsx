@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { AudioState, MeterData } from '../lib/types';
 
 interface TransportBarProps {
@@ -19,6 +20,8 @@ export const TransportBar = ({
   onSessionLengthChange,
 }: TransportBarProps) => {
   const [showSessionOptions, setShowSessionOptions] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const sessionButtonRef = useRef<HTMLButtonElement>(null);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -38,8 +41,35 @@ export const TransportBar = ({
     return `${Math.min(100, normalized * 100)}%`;
   };
 
+  // Calculate dropdown position when menu is shown
+  useEffect(() => {
+    if (showSessionOptions && sessionButtonRef.current) {
+      const rect = sessionButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [showSessionOptions]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showSessionOptions && sessionButtonRef.current && !sessionButtonRef.current.contains(event.target as Node)) {
+        setShowSessionOptions(false);
+      }
+    };
+
+    if (showSessionOptions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSessionOptions]);
+
   return (
-    <div className="card mb-6">
+    <>
+    <div className="card mb-6 overflow-visible">
       <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6">
         {/* Main Transport Controls */}
         <div className="flex items-center space-x-4">
@@ -66,46 +96,15 @@ export const TransportBar = ({
         </div>
 
         {/* Session Length Selector */}
-        <div className="relative">
+        <div className="relative overflow-visible">
           <button
+            ref={sessionButtonRef}
             onClick={() => setShowSessionOptions(!showSessionOptions)}
             className="btn-secondary flex items-center space-x-2"
           >
             <span>⏱ Session</span>
             <span className="text-xs">▼</span>
           </button>
-
-          {showSessionOptions && (
-            <div className="absolute top-full left-0 mt-2 bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-10 min-w-[200px]">
-              <div className="p-2">
-                <button
-                  onClick={() => {
-                    onSessionLengthChange(null);
-                    setShowSessionOptions(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
-                    audioState.sessionLength === null ? 'bg-indigo-900/50 text-indigo-300' : ''
-                  }`}
-                >
-                  No auto-stop
-                </button>
-                {[10, 20, 30, 45, 60].map((minutes) => (
-                  <button
-                    key={minutes}
-                    onClick={() => {
-                      onSessionLengthChange(minutes);
-                      setShowSessionOptions(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
-                      audioState.sessionLength === minutes ? 'bg-indigo-900/50 text-indigo-300' : ''
-                    }`}
-                  >
-                    {minutes} minutes
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Master Gain */}
@@ -115,7 +114,7 @@ export const TransportBar = ({
           </label>
           <input
             type="range"
-            min="-48"
+            min="-99"
             max="-3"
             step="0.5"
             value={audioState.masterGainDb}
@@ -151,20 +150,48 @@ export const TransportBar = ({
         </div>
       </div>
 
-      {/* Recording Status */}
-      {audioState.isRecording && (
-        <div className="mt-4 p-3 bg-rose-900/30 border border-rose-700/50 rounded-lg backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
-              <span className="text-rose-300 font-medium">Recording</span>
-              <span className="text-rose-200 font-mono">
-                {formatTime(audioState.recordingTime)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
+    {/* Portal Dropdown - Rendered to document body */}
+    {showSessionOptions && createPortal(
+      <div
+        className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[9999] min-w-[200px]"
+        style={{
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`,
+          width: `${dropdownPosition.width}px`
+        }}
+      >
+        <div className="p-2">
+          <button
+            onClick={() => {
+              onSessionLengthChange(null);
+              setShowSessionOptions(false);
+            }}
+            className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
+              audioState.sessionLength === null ? 'bg-indigo-900/50 text-indigo-300' : ''
+            }`}
+          >
+            No auto-stop
+          </button>
+          {[10, 20, 30, 45, 60].map((minutes) => (
+            <button
+              key={minutes}
+              onClick={() => {
+                onSessionLengthChange(minutes);
+                setShowSessionOptions(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
+                audioState.sessionLength === minutes ? 'bg-indigo-900/50 text-indigo-300' : ''
+              }`}
+            >
+              {minutes} minutes
+            </button>
+          ))}
+        </div>
+      </div>,
+      document.body
+    )}
+  </>
   );
 };

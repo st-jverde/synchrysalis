@@ -24,7 +24,7 @@ export class AudioGraphManager {
 
   constructor() {
     // Initialize audio nodes
-    this.masterGain = new Tone.Gain(Tone.dbToGain(-45)); // -45 dB default for better headroom
+    this.masterGain = new Tone.Gain(Tone.dbToGain(-6)); // -6 dB default for better headroom
     this.limiter = new Tone.Limiter(-3); // -3 dB threshold for better distortion prevention
     this.meter = new Tone.Meter();
     this.reverb = new Tone.Reverb(1.5);
@@ -206,11 +206,17 @@ export class AudioGraphManager {
     }
   }
 
-  startLayer(id: string): void {
+  startLayer(id: string, gainDb?: number): void {
     const nodeGroup = this.nodes.get(id);
     if (!nodeGroup) return;
 
     try {
+      // Reset gain to original value in case it was faded out
+      if (gainDb !== undefined) {
+        const originalGain = Tone.dbToGain(gainDb);
+        nodeGroup.nodes.gain.gain.rampTo(originalGain, 0.1);
+      }
+
       nodeGroup.nodes.oscillators.forEach(osc => {
         if (osc.state !== 'started') {
           osc.start();
@@ -241,6 +247,31 @@ export class AudioGraphManager {
       }
     } catch (error) {
       console.error('Error stopping layer:', error);
+    }
+  }
+
+  fadeOutLayer(id: string, duration: number = 1): void {
+    const nodeGroup = this.nodes.get(id);
+    if (!nodeGroup) return;
+
+    try {
+      // Fade out the layer gain to silence over the specified duration
+      nodeGroup.nodes.gain.gain.rampTo(0, duration);
+
+      // Stop the oscillators after the fade completes
+      setTimeout(() => {
+        nodeGroup.nodes.oscillators.forEach(osc => {
+          if (osc.state === 'started') {
+            osc.stop();
+          }
+        });
+
+        if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state === 'started') {
+          nodeGroup.nodes.lfo.stop();
+        }
+      }, duration * 1000);
+    } catch (error) {
+      console.error('Error fading out layer:', error);
     }
   }
 
