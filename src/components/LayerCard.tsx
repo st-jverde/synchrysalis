@@ -163,7 +163,7 @@ export const LayerCard = ({
           <input
             type="range"
             min="-48"
-            max="-40"
+            max="0"
             step="0.5"
             value={layer.gainDb}
             onChange={(e) => onUpdate(layer.id, { gainDb: parseFloat(e.target.value) })}

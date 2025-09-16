@@ -3,6 +3,7 @@ import type { LayerParams } from './types';
 
 export interface AudioNodeGroup {
   id: string;
+  type: 'binaural' | 'isochronic' | 'monaural';
   nodes: {
     oscillators: Tone.Oscillator[];
     gain: Tone.Gain;
@@ -21,6 +22,7 @@ export class AudioGraphManager {
   private reverbSend: Tone.Gain;
   private nodes: Map<string, AudioNodeGroup> = new Map();
   private isInitialized = false;
+  private layerParams: Map<string, LayerParams> = new Map();
 
   constructor() {
     // Initialize audio nodes
@@ -47,18 +49,19 @@ export class AudioGraphManager {
   createLayerNodes(params: LayerParams): AudioNodeGroup {
     const nodes = this.buildNodesForType(params);
 
-    // Connect to master chain
-    nodes.gain.connect(this.masterGain);
-    nodes.gain.connect(this.reverbSend);
+    // Tap reverb post-filter so effects follow panning/filtering
+    nodes.filter?.connect(this.reverbSend);
 
     const nodeGroup = {
       id: params.id,
+      type: params.type,
       nodes,
       dispose: () => this.disposeLayerNodes(params.id)
     };
 
     // Add to nodes map first, then apply any remaining parameters
     this.nodes.set(params.id, nodeGroup);
+    this.layerParams.set(params.id, { ...params });
 
     // Apply initial parameters (now that nodeGroup is in the map)
     this.updateLayerNodes(params.id, params);
@@ -71,6 +74,7 @@ export class AudioGraphManager {
     const panner = new Tone.Panner(params.pan);
     const filter = new Tone.Filter(800, 'lowpass');
 
+    // Signal chain: gain -> panner -> filter -> master
     gain.chain(panner, filter, this.masterGain);
 
     switch (params.type) {
@@ -147,6 +151,11 @@ export class AudioGraphManager {
 
     const { nodes } = nodeGroup;
 
+    // Merge with existing params so type-specific updates work even if type not provided
+    const existing = this.layerParams.get(id);
+    if (!existing) return;
+    const merged: LayerParams = { ...existing, ...params } as LayerParams;
+
     // Update basic parameters
     if (params.gainDb !== undefined) {
       nodes.gain.gain.rampTo(Tone.dbToGain(params.gainDb), 0.1);
@@ -163,47 +172,43 @@ export class AudioGraphManager {
     }
 
     // Update type-specific parameters
-    if (params.type === 'binaural' && (params.carrierLeft !== undefined || params.carrierRight !== undefined || params.beatHz !== undefined)) {
+    if (nodeGroup.type === 'binaural' && (params.carrierLeft !== undefined || params.carrierRight !== undefined || params.beatHz !== undefined)) {
       const leftOsc = nodes.oscillators[0];
       const rightOsc = nodes.oscillators[1];
 
-      if (params.carrierLeft !== undefined || params.beatHz !== undefined) {
-        const leftFreq = (params.carrierLeft ?? params.carrierLeft!) - (params.beatHz ?? params.beatHz!) / 2;
-        leftOsc.frequency.rampTo(leftFreq, 0.2);
-      }
-
-      if (params.carrierRight !== undefined || params.beatHz !== undefined) {
-        const rightFreq = (params.carrierRight ?? params.carrierRight!) + (params.beatHz ?? params.beatHz!) / 2;
-        rightOsc.frequency.rampTo(rightFreq, 0.2);
-      }
-    } else if (params.type === 'isochronic' && (params.carrier !== undefined || params.beatHz !== undefined)) {
+      const leftFreq = (merged.carrierLeft ?? 200) - (merged.beatHz ?? 0) / 2;
+      const rightFreq = (merged.carrierRight ?? 210) + (merged.beatHz ?? 0) / 2;
+      leftOsc.frequency.rampTo(leftFreq, 0.2);
+      rightOsc.frequency.rampTo(rightFreq, 0.2);
+    } else if (nodeGroup.type === 'isochronic' && (params.carrier !== undefined || params.beatHz !== undefined)) {
       const osc = nodes.oscillators[0];
       const lfo = nodes.lfo!;
 
       if (params.carrier !== undefined) {
-        osc.frequency.rampTo(params.carrier, 0.2);
+        osc.frequency.rampTo(merged.carrier!, 0.2);
       }
 
       if (params.beatHz !== undefined) {
-        lfo.frequency.rampTo(params.beatHz, 0.2);
+        lfo.frequency.rampTo(merged.beatHz, 0.2);
       }
-    } else if (params.type === 'monaural' && (params.carrier !== undefined || params.beatHz !== undefined)) {
+    } else if (nodeGroup.type === 'monaural' && (params.carrier !== undefined || params.beatHz !== undefined)) {
       const carrierOsc = nodes.oscillators[0];
       const beatOsc = nodes.oscillators[1];
 
-      if (params.carrier !== undefined) {
-        carrierOsc.frequency.rampTo(params.carrier, 0.2);
-        beatOsc.frequency.rampTo(params.carrier + (params.beatHz ?? params.beatHz!), 0.2);
-      } else if (params.beatHz !== undefined) {
-        beatOsc.frequency.rampTo(params.carrier! + params.beatHz, 0.2);
-      }
+      const carrier = merged.carrier ?? 200;
+      const beatHz = merged.beatHz ?? 0;
+      carrierOsc.frequency.rampTo(carrier, 0.2);
+      beatOsc.frequency.rampTo(carrier + beatHz, 0.2);
     }
 
     // Update LFO if present
     if (params.lfo?.enabled && nodes.lfo) {
       nodes.lfo.frequency.rampTo(params.lfo.rateHz, 0.1);
-      // Note: LFO depth control would need to be implemented differently
+      // Note: LFO depth/target control not implemented here
     }
+
+    // Persist merged params
+    this.layerParams.set(id, merged);
   }
 
   startLayer(id: string, gainDb?: number): void {
@@ -286,6 +291,7 @@ export class AudioGraphManager {
     if (nodeGroup) {
       nodeGroup.dispose();
       this.nodes.delete(id);
+      this.layerParams.delete(id);
     }
   }
 
@@ -308,6 +314,7 @@ export class AudioGraphManager {
     nodes.lfo?.dispose();
 
     this.nodes.delete(id);
+    this.layerParams.delete(id);
   }
 
   setMasterGain(db: number): void {
