@@ -41,11 +41,9 @@ export interface Preset {
 
 export interface AudioState {
   isPlaying: boolean;
-  isRecording: boolean;
   masterGainDb: number;
   sessionLength: number | null; // minutes, null = no auto-stop
   elapsedTime: number; // seconds
-  recordingTime: number; // seconds
 }
 
 export interface MeterData {

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { Preset, LayerParams } from '../lib/types';
 import { usePresets } from '../hooks/usePresets';
 
@@ -13,6 +14,8 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
   const [saveName, setSaveName] = useState('');
   const [saveDescription, setSaveDescription] = useState('');
   const [selectedPreset, setSelectedPreset] = useState<Preset | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const presetButtonRef = useRef<HTMLButtonElement>(null);
 
   const {
     allPresets,
@@ -20,6 +23,7 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
     deletePreset,
     isPresetNameTaken,
   } = usePresets();
+
 
   const handleLoadPreset = (preset: Preset) => {
     onLoadPreset(preset.layers);
@@ -46,78 +50,55 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
     }
   };
 
+  // Calculate dropdown position when menu is shown
+  useEffect(() => {
+    if (showPresetMenu && presetButtonRef.current) {
+      const rect = presetButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  }, [showPresetMenu]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPresetMenu && presetButtonRef.current && !presetButtonRef.current.contains(event.target as Node)) {
+        setShowPresetMenu(false);
+      }
+    };
+
+    if (showPresetMenu) {
+      // Use a small delay to prevent immediate closure from the button click
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 50);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  }, [showPresetMenu]);
+
   return (
-    <div className="card mb-6">
+    <div className="card mb-6 overflow-visible">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
         {/* Preset Selector */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 overflow-visible">
           <button
-            onClick={() => setShowPresetMenu(!showPresetMenu)}
+            ref={presetButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowPresetMenu(!showPresetMenu);
+            }}
             className="w-full sm:w-80 btn-secondary flex items-center justify-between"
           >
             <span>{selectedPreset?.name || 'Select a preset...'}</span>
             <span className="text-xs">▼</span>
           </button>
-
-          {showPresetMenu && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-200 rounded-lg shadow-lg z-10 max-h-96 overflow-y-auto">
-              <div className="p-2">
-                {/* Built-in Presets */}
-                <div className="mb-4">
-                  <div className="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                    Built-in Presets
-                  </div>
-                  {allPresets.filter(p => !p.id.startsWith('user-')).map((preset) => (
-                    <button
-                      key={preset.id}
-                      onClick={() => {
-                        setSelectedPreset(preset);
-                        handleLoadPreset(preset);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded text-sm hover:bg-neutral-100 flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="font-medium">{preset.name}</div>
-                        <div className="text-xs text-neutral-500">{preset.description}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* User Presets */}
-                {allPresets.filter(p => p.id.startsWith('user-')).length > 0 && (
-                  <div>
-                    <div className="px-3 py-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                      Your Presets
-                    </div>
-                    {allPresets.filter(p => p.id.startsWith('user-')).map((preset) => (
-                      <div
-                        key={preset.id}
-                        className="flex items-center justify-between px-3 py-2 rounded text-sm hover:bg-neutral-100"
-                      >
-                        <button
-                          onClick={() => {
-                            setSelectedPreset(preset);
-                            handleLoadPreset(preset);
-                          }}
-                          className="flex-1 text-left"
-                        >
-                          <div className="font-medium">{preset.name}</div>
-                          <div className="text-xs text-neutral-500">{preset.description}</div>
-                        </button>
-                        <button
-                          onClick={() => handleDeletePreset(preset)}
-                          className="ml-2 text-red-600 hover:text-red-800 text-xs"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}
@@ -132,15 +113,15 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
         </div>
       </div>
 
-      {/* Save Dialog */}
+            {/* Save Dialog */}
       {showSaveDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Save Preset</h3>
+            <h3 className="text-lg font-semibold mb-4 text-slate-100">Save Preset</h3>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label className="block text-sm font-medium text-slate-300 mb-1">
                   Preset Name
                 </label>
                 <input
@@ -153,10 +134,10 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  Description (optional)
-                </label>
+                              <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
+                    Description (optional)
+                  </label>
                 <textarea
                   value={saveDescription}
                   onChange={(e) => setSaveDescription(e.target.value)}
@@ -185,6 +166,75 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Portal Dropdown - Rendered to document body */}
+      {showPresetMenu && createPortal(
+        <div
+          className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[9999] max-h-96 overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+        >
+          <div className="p-2">
+            {/* Built-in Presets */}
+            <div className="mb-4">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                Built-in Presets
+              </div>
+              {allPresets.filter(p => ['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => {
+                    setSelectedPreset(preset);
+                    handleLoadPreset(preset);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 flex items-center justify-between text-slate-200"
+                >
+                  <div>
+                    <div className="font-medium">{preset.name}</div>
+                    <div className="text-xs text-slate-400">{preset.description}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* User Presets */}
+            {allPresets.filter(p => !['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).length > 0 && (
+              <div>
+                <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                  Your Presets
+                </div>
+                {allPresets.filter(p => !['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="flex items-center justify-between px-3 py-2 rounded text-sm hover:bg-slate-700/50"
+                  >
+                    <button
+                      onClick={() => {
+                        setSelectedPreset(preset);
+                        handleLoadPreset(preset);
+                      }}
+                      className="flex-1 text-left text-slate-200"
+                    >
+                      <div className="font-medium">{preset.name}</div>
+                      <div className="text-xs text-slate-400">{preset.description}</div>
+                    </button>
+                    <button
+                      onClick={() => handleDeletePreset(preset)}
+                      className="ml-2 text-rose-400 hover:text-rose-300 text-xs"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

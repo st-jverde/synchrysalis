@@ -6,11 +6,9 @@ import type { LayerParams, AudioState, MeterData } from '../lib/types';
 export const useAudioEngine = () => {
   const [audioState, setAudioState] = useState<AudioState>({
     isPlaying: false,
-    isRecording: false,
-    masterGainDb: -18,
+    masterGainDb: -6,
     sessionLength: null,
     elapsedTime: 0,
-    recordingTime: 0,
   });
 
   const [layers, setLayers] = useState<LayerParams[]>([]);
@@ -51,7 +49,7 @@ export const useAudioEngine = () => {
       // Start all layers
       layers.forEach(layer => {
         if (!layer.muted) {
-          audioGraphRef.current!.startLayer(layer.id);
+          audioGraphRef.current!.startLayer(layer.id, layer.gainDb);
         }
       });
 
@@ -63,7 +61,29 @@ export const useAudioEngine = () => {
           setAudioState(prev => {
             const newElapsedTime = prev.elapsedTime + 1;
             if (newElapsedTime >= audioState.sessionLength! * 60) {
-              stop();
+              // Fade out playback when session time is reached
+              if (audioGraphRef.current) {
+                layers.forEach(layer => {
+                  audioGraphRef.current!.fadeOutLayer(layer.id, 1);
+                });
+              }
+              setAudioState(prev => ({ ...prev, isPlaying: false }));
+
+              // Clear meter timer after fade-out completes and set meter to -∞
+              setTimeout(() => {
+                if (meterTimerRef.current) {
+                  clearInterval(meterTimerRef.current);
+                  meterTimerRef.current = null;
+                }
+                // Set meter to -∞ after fade-out completes
+                setMeterData({
+                  rms: -60,
+                  peak: -60,
+                  left: -60,
+                  right: -60
+                });
+              }, 1000); // Wait for fade-out to complete
+
               return prev;
             }
             return { ...prev, elapsedTime: newElapsedTime };
@@ -77,35 +97,46 @@ export const useAudioEngine = () => {
           const meterData = audioGraphRef.current.getMeterData();
           setMeterData(meterData);
         }
-      }, 50);
+      }, 100); // Less frequent updates for stability
 
     } catch (error) {
       console.error('Failed to start audio:', error);
     }
   }, [layers, audioState.sessionLength, initializeAudio]);
 
-  // Stop audio playback
+  // Stop audio playback with fade out
   const stop = useCallback(() => {
     if (!audioGraphRef.current) return;
 
+    // Immediately update UI state
+    setAudioState(prev => ({ ...prev, isPlaying: false }));
+
     try {
-      // Stop all layers
-      layers.forEach(layer => {
-        audioGraphRef.current!.stopLayer(layer.id);
-      });
-
-      setAudioState(prev => ({ ...prev, isPlaying: false }));
-
-      // Clear timers
+      // Clear timers immediately
       if (sessionTimerRef.current) {
         clearInterval(sessionTimerRef.current);
         sessionTimerRef.current = null;
       }
 
-      if (meterTimerRef.current) {
-        clearInterval(meterTimerRef.current);
-        meterTimerRef.current = null;
-      }
+      // Fade out all layers over 1 second (50% quicker)
+      layers.forEach(layer => {
+        audioGraphRef.current!.fadeOutLayer(layer.id, 1);
+      });
+
+      // Clear meter timer after fade-out completes and set meter to -∞
+      setTimeout(() => {
+        if (meterTimerRef.current) {
+          clearInterval(meterTimerRef.current);
+          meterTimerRef.current = null;
+        }
+        // Set meter to -∞ after fade-out completes
+        setMeterData({
+          rms: -60,
+          peak: -60,
+          left: -60,
+          right: -60
+        });
+      }, 1000); // Wait for fade-out to complete
 
     } catch (error) {
       console.error('Failed to stop audio:', error);
@@ -113,7 +144,11 @@ export const useAudioEngine = () => {
   }, [layers]);
 
   // Add a new layer
-  const addLayer = useCallback((params: LayerParams) => {
+  const addLayer = useCallback(async (params: LayerParams) => {
+    if (!audioGraphRef.current || !isInitializedRef.current) {
+      await initializeAudio();
+    }
+
     if (!audioGraphRef.current) return;
 
     try {
@@ -122,7 +157,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to add layer:', error);
     }
-  }, []);
+  }, [initializeAudio]);
 
   // Update layer parameters
   const updateLayer = useCallback((id: string, updates: Partial<LayerParams>) => {
@@ -159,7 +194,7 @@ export const useAudioEngine = () => {
           if (newMuted) {
             audioGraphRef.current.stopLayer(id);
           } else if (audioState.isPlaying) {
-            audioGraphRef.current.startLayer(id);
+            audioGraphRef.current.startLayer(id, layer.gainDb);
           }
         }
         return { ...layer, muted: newMuted };
@@ -196,7 +231,11 @@ export const useAudioEngine = () => {
   }, []);
 
   // Load preset
-  const loadPreset = useCallback((layers: LayerParams[]) => {
+  const loadPreset = useCallback(async (presetLayers: LayerParams[]) => {
+    if (!audioGraphRef.current || !isInitializedRef.current) {
+      await initializeAudio();
+    }
+
     if (!audioGraphRef.current) return;
 
     try {
@@ -210,16 +249,17 @@ export const useAudioEngine = () => {
         audioGraphRef.current!.removeLayer(layer.id);
       });
 
-      // Add new layers
-      layers.forEach(layer => {
+      // Add new layers (with fresh IDs to avoid conflicts)
+      const freshLayers = presetLayers.map(layer => ({ ...layer, id: crypto.randomUUID() }));
+      freshLayers.forEach(layer => {
         audioGraphRef.current!.addLayer(layer);
       });
 
-      setLayers(layers);
+      setLayers(freshLayers);
     } catch (error) {
       console.error('Failed to load preset:', error);
     }
-  }, [audioState.isPlaying, stop]);
+  }, [audioState.isPlaying, stop, initializeAudio, layers]);
 
   // Cleanup on unmount
   useEffect(() => {

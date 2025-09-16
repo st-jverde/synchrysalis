@@ -3,6 +3,7 @@ import type { LayerParams } from './types';
 
 export interface AudioNodeGroup {
   id: string;
+  type: 'binaural' | 'isochronic' | 'monaural';
   nodes: {
     oscillators: Tone.Oscillator[];
     gain: Tone.Gain;
@@ -21,11 +22,12 @@ export class AudioGraphManager {
   private reverbSend: Tone.Gain;
   private nodes: Map<string, AudioNodeGroup> = new Map();
   private isInitialized = false;
+  private layerParams: Map<string, LayerParams> = new Map();
 
   constructor() {
     // Initialize audio nodes
-    this.masterGain = new Tone.Gain(-18); // -18 dB default
-    this.limiter = new Tone.Limiter(-3); // -3 dB threshold
+    this.masterGain = new Tone.Gain(Tone.dbToGain(-6)); // -6 dB default for better headroom
+    this.limiter = new Tone.Limiter(-3); // -3 dB threshold for better distortion prevention
     this.meter = new Tone.Meter();
     this.reverb = new Tone.Reverb(1.5);
     this.reverbSend = new Tone.Gain(-20); // -20 dB reverb send
@@ -47,25 +49,32 @@ export class AudioGraphManager {
   createLayerNodes(params: LayerParams): AudioNodeGroup {
     const nodes = this.buildNodesForType(params);
 
-    // Connect to master chain
-    nodes.gain.connect(this.masterGain);
-    nodes.gain.connect(this.reverbSend);
+    // Tap reverb post-filter so effects follow panning/filtering
+    nodes.filter?.connect(this.reverbSend);
 
-    // Apply initial parameters
-    this.updateLayerNodes(params.id, params);
-
-    return {
+    const nodeGroup = {
       id: params.id,
+      type: params.type,
       nodes,
       dispose: () => this.disposeLayerNodes(params.id)
     };
+
+    // Add to nodes map first, then apply any remaining parameters
+    this.nodes.set(params.id, nodeGroup);
+    this.layerParams.set(params.id, { ...params });
+
+    // Apply initial parameters (now that nodeGroup is in the map)
+    this.updateLayerNodes(params.id, params);
+
+    return nodeGroup;
   }
 
   private buildNodesForType(params: LayerParams) {
-    const gain = new Tone.Gain();
+    const gain = new Tone.Gain(Tone.dbToGain(params.gainDb)); // Set initial gain from params
     const panner = new Tone.Panner(params.pan);
     const filter = new Tone.Filter(800, 'lowpass');
 
+    // Signal chain: gain -> panner -> filter -> master
     gain.chain(panner, filter, this.masterGain);
 
     switch (params.type) {
@@ -142,9 +151,14 @@ export class AudioGraphManager {
 
     const { nodes } = nodeGroup;
 
+    // Merge with existing params so type-specific updates work even if type not provided
+    const existing = this.layerParams.get(id);
+    if (!existing) return;
+    const merged: LayerParams = { ...existing, ...params } as LayerParams;
+
     // Update basic parameters
     if (params.gainDb !== undefined) {
-      nodes.gain.gain.rampTo(Tone.gainToDb(params.gainDb), 0.1);
+      nodes.gain.gain.rampTo(Tone.dbToGain(params.gainDb), 0.1);
     }
 
     if (params.pan !== undefined) {
@@ -158,59 +172,67 @@ export class AudioGraphManager {
     }
 
     // Update type-specific parameters
-    if (params.type === 'binaural' && (params.carrierLeft !== undefined || params.carrierRight !== undefined || params.beatHz !== undefined)) {
+    if (nodeGroup.type === 'binaural' && (params.carrierLeft !== undefined || params.carrierRight !== undefined || params.beatHz !== undefined)) {
       const leftOsc = nodes.oscillators[0];
       const rightOsc = nodes.oscillators[1];
 
-      if (params.carrierLeft !== undefined || params.beatHz !== undefined) {
-        const leftFreq = (params.carrierLeft ?? params.carrierLeft!) - (params.beatHz ?? params.beatHz!) / 2;
-        leftOsc.frequency.rampTo(leftFreq, 0.2);
-      }
-
-      if (params.carrierRight !== undefined || params.beatHz !== undefined) {
-        const rightFreq = (params.carrierRight ?? params.carrierRight!) + (params.beatHz ?? params.beatHz!) / 2;
-        rightOsc.frequency.rampTo(rightFreq, 0.2);
-      }
-    } else if (params.type === 'isochronic' && (params.carrier !== undefined || params.beatHz !== undefined)) {
+      const leftFreq = (merged.carrierLeft ?? 200) - (merged.beatHz ?? 0) / 2;
+      const rightFreq = (merged.carrierRight ?? 210) + (merged.beatHz ?? 0) / 2;
+      leftOsc.frequency.rampTo(leftFreq, 0.2);
+      rightOsc.frequency.rampTo(rightFreq, 0.2);
+    } else if (nodeGroup.type === 'isochronic' && (params.carrier !== undefined || params.beatHz !== undefined)) {
       const osc = nodes.oscillators[0];
       const lfo = nodes.lfo!;
 
       if (params.carrier !== undefined) {
-        osc.frequency.rampTo(params.carrier, 0.2);
+        osc.frequency.rampTo(merged.carrier!, 0.2);
       }
 
       if (params.beatHz !== undefined) {
-        lfo.frequency.rampTo(params.beatHz, 0.2);
+        lfo.frequency.rampTo(merged.beatHz, 0.2);
       }
-    } else if (params.type === 'monaural' && (params.carrier !== undefined || params.beatHz !== undefined)) {
+    } else if (nodeGroup.type === 'monaural' && (params.carrier !== undefined || params.beatHz !== undefined)) {
       const carrierOsc = nodes.oscillators[0];
       const beatOsc = nodes.oscillators[1];
 
-      if (params.carrier !== undefined) {
-        carrierOsc.frequency.rampTo(params.carrier, 0.2);
-        beatOsc.frequency.rampTo(params.carrier + (params.beatHz ?? params.beatHz!), 0.2);
-      } else if (params.beatHz !== undefined) {
-        beatOsc.frequency.rampTo(params.carrier! + params.beatHz, 0.2);
-      }
+      const carrier = merged.carrier ?? 200;
+      const beatHz = merged.beatHz ?? 0;
+      carrierOsc.frequency.rampTo(carrier, 0.2);
+      beatOsc.frequency.rampTo(carrier + beatHz, 0.2);
     }
 
     // Update LFO if present
     if (params.lfo?.enabled && nodes.lfo) {
       nodes.lfo.frequency.rampTo(params.lfo.rateHz, 0.1);
-      // Note: LFO depth control would need to be implemented differently
+      // Note: LFO depth/target control not implemented here
     }
+
+    // Persist merged params
+    this.layerParams.set(id, merged);
   }
 
-  startLayer(id: string): void {
+  startLayer(id: string, gainDb?: number): void {
     const nodeGroup = this.nodes.get(id);
     if (!nodeGroup) return;
 
-    nodeGroup.nodes.oscillators.forEach(osc => {
-      osc.start();
-    });
+    try {
+      // Reset gain to original value in case it was faded out
+      if (gainDb !== undefined) {
+        const originalGain = Tone.dbToGain(gainDb);
+        nodeGroup.nodes.gain.gain.rampTo(originalGain, 0.1);
+      }
 
-    if (nodeGroup.nodes.lfo) {
-      nodeGroup.nodes.lfo.start();
+      nodeGroup.nodes.oscillators.forEach(osc => {
+        if (osc.state !== 'started') {
+          osc.start();
+        }
+      });
+
+      if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state !== 'started') {
+        nodeGroup.nodes.lfo.start();
+      }
+    } catch (error) {
+      console.error('Error starting layer:', error);
     }
   }
 
@@ -218,18 +240,49 @@ export class AudioGraphManager {
     const nodeGroup = this.nodes.get(id);
     if (!nodeGroup) return;
 
-    nodeGroup.nodes.oscillators.forEach(osc => {
-      osc.stop();
-    });
+    try {
+      nodeGroup.nodes.oscillators.forEach(osc => {
+        if (osc.state === 'started') {
+          osc.stop();
+        }
+      });
 
-    if (nodeGroup.nodes.lfo) {
-      nodeGroup.nodes.lfo.stop();
+      if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state === 'started') {
+        nodeGroup.nodes.lfo.stop();
+      }
+    } catch (error) {
+      console.error('Error stopping layer:', error);
+    }
+  }
+
+  fadeOutLayer(id: string, duration: number = 1): void {
+    const nodeGroup = this.nodes.get(id);
+    if (!nodeGroup) return;
+
+    try {
+      // Fade out the layer gain to silence over the specified duration
+      nodeGroup.nodes.gain.gain.rampTo(0, duration);
+
+      // Stop the oscillators after the fade completes
+      setTimeout(() => {
+        nodeGroup.nodes.oscillators.forEach(osc => {
+          if (osc.state === 'started') {
+            osc.stop();
+          }
+        });
+
+        if (nodeGroup.nodes.lfo && nodeGroup.nodes.lfo.state === 'started') {
+          nodeGroup.nodes.lfo.stop();
+        }
+      }, duration * 1000);
+    } catch (error) {
+      console.error('Error fading out layer:', error);
     }
   }
 
   addLayer(params: LayerParams): AudioNodeGroup {
     const nodeGroup = this.createLayerNodes(params);
-    this.nodes.set(params.id, nodeGroup);
+    // nodeGroup is already added to the map in createLayerNodes
     return nodeGroup;
   }
 
@@ -238,6 +291,7 @@ export class AudioGraphManager {
     if (nodeGroup) {
       nodeGroup.dispose();
       this.nodes.delete(id);
+      this.layerParams.delete(id);
     }
   }
 
@@ -260,20 +314,35 @@ export class AudioGraphManager {
     nodes.lfo?.dispose();
 
     this.nodes.delete(id);
+    this.layerParams.delete(id);
   }
 
   setMasterGain(db: number): void {
-    this.masterGain.gain.rampTo(Tone.gainToDb(db), 0.1);
+    this.masterGain.gain.rampTo(Tone.dbToGain(db), 0.1);
   }
 
   getMeterData(): { rms: number; peak: number; left: number; right: number } {
-    const value = this.meter.getValue() as number;
-    return {
-      rms: value,
-      peak: value,
-      left: value,
-      right: value
-    };
+    try {
+      const value = this.meter.getValue() as number;
+      // Ensure we don't get NaN or infinite values
+      const safeValue = isFinite(value) ? value : -60;
+      const clampedValue = Math.max(-60, Math.min(0, safeValue));
+
+      return {
+        rms: clampedValue,
+        peak: clampedValue,
+        left: clampedValue,
+        right: clampedValue
+      };
+    } catch (error) {
+      console.error('Error getting meter data:', error);
+      return {
+        rms: -60,
+        peak: -60,
+        left: -60,
+        right: -60
+      };
+    }
   }
 
   getDestination(): MediaStreamAudioDestinationNode {

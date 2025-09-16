@@ -8,43 +8,43 @@
   }
 
   body {
-    @apply bg-neutral-50 text-neutral-900;
+    @apply bg-slate-900 text-slate-100;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    .btn-primary {
+    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg hover:shadow-xl;
   }
 
   .btn-secondary {
-    @apply bg-neutral-200 hover:bg-neutral-300 text-neutral-900 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2;
+    @apply bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg hover:shadow-xl;
   }
 
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+    @apply bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 focus:ring-offset-slate-900 shadow-lg hover:shadow-xl;
   }
 
   .card {
-    @apply bg-white rounded-2xl shadow-lg border border-neutral-200 p-6;
+    @apply bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 p-6 transition-all duration-300 hover:border-slate-600/50;
   }
 
   .input-field {
-    @apply w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-100 placeholder-slate-400 transition-all duration-200;
   }
 
-  .slider {
-    @apply w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer;
+    .slider {
+    @apply w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer transition-all duration-200;
   }
 
   .slider::-webkit-slider-thumb {
-    @apply appearance-none w-5 h-5 bg-primary-600 rounded-full cursor-pointer;
+    @apply appearance-none w-5 h-5 bg-indigo-500 rounded-full cursor-pointer shadow-lg hover:shadow-xl transition-all duration-200;
   }
 
   .slider::-moz-range-thumb {
-    @apply w-5 h-5 bg-primary-600 rounded-full cursor-pointer border-0;
+    @apply w-5 h-5 bg-indigo-500 rounded-full cursor-pointer border-0 shadow-lg hover:shadow-xl transition-all duration-200;
   }
 }
 
