@@ -32,6 +32,12 @@ function App() {
     initializeAudio,
   } = useAudioEngine();
 
+  // Wrapper for async setMasterGain
+  const handleMasterGainChange = (db: number) => {
+    setMasterGain(db).catch(error => {
+      console.error('Failed to set master gain:', error);
+    });
+  };
 
   // Initialize with a default layer if none exist
   useEffect(() => {
@@ -97,7 +103,7 @@ function App() {
           meterData={meterData}
           onStart={handleStart}
           onStop={stop}
-          onMasterGainChange={setMasterGain}
+          onMasterGainChange={handleMasterGainChange}
           onSessionLengthChange={setSessionLength}
         />
 

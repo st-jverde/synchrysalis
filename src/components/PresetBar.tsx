@@ -184,7 +184,7 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
               <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                 Built-in Presets
               </div>
-              {allPresets.filter(p => ['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).map((preset) => (
+              {allPresets.filter(p => ['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).map((preset) => (
                 <button
                   key={preset.id}
                   onClick={() => {
@@ -202,12 +202,12 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
             </div>
 
             {/* User Presets */}
-            {allPresets.filter(p => !['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).length > 0 && (
+            {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).length > 0 && (
               <div>
                 <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
                   Your Presets
                 </div>
-                {allPresets.filter(p => !['alpha-focus', 'theta-relax', 'delta-sleep', 'gamma-burst', 'theta-gamma-coupling', 'blank'].includes(p.id)).map((preset) => (
+                {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).map((preset) => (
                   <div
                     key={preset.id}
                     className="flex items-center justify-between px-3 py-2 rounded text-sm hover:bg-slate-700/50"

@@ -25,15 +25,17 @@ export class AudioGraphManager {
   private layerParams: Map<string, LayerParams> = new Map();
 
   constructor() {
-    // Initialize audio nodes
-    this.masterGain = new Tone.Gain(Tone.dbToGain(-6)); // -6 dB default for better headroom
+    // Initialize audio nodes with the same value as React state to prevent sync issues
+    this.masterGain = new Tone.Gain(Tone.dbToGain(-18)); // -18 dB to match React state
+    console.log(`🎵 CONSTRUCTOR - Master gain created at -18dB (${Tone.dbToGain(-18)} linear)`);
     this.limiter = new Tone.Limiter(-3); // -3 dB threshold for better distortion prevention
     this.meter = new Tone.Meter();
     this.reverb = new Tone.Reverb(1.5);
     this.reverbSend = new Tone.Gain(-20); // -20 dB reverb send
 
-    // Connect the audio chain
-    this.masterGain.chain(this.limiter, this.meter, Tone.Destination);
+    // Connect the audio chain (temporarily bypass limiter for testing)
+    this.masterGain.chain(this.meter, Tone.Destination);
+    // this.masterGain.chain(this.limiter, this.meter, Tone.Destination);
     this.reverbSend.connect(this.reverb);
     this.reverb.toDestination();
   }
@@ -41,9 +43,18 @@ export class AudioGraphManager {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
+    // Ensure AudioContext is started and resumed
     await Tone.start();
+
+    // Force resume the AudioContext if it's suspended
+    if (Tone.context.state === 'suspended') {
+      await Tone.context.resume();
+    }
+
     await this.reverb.generate();
     this.isInitialized = true;
+
+    console.log('🎵 Audio initialized, context state:', Tone.context.state);
   }
 
   createLayerNodes(params: LayerParams): AudioNodeGroup {
@@ -318,7 +329,48 @@ export class AudioGraphManager {
   }
 
   setMasterGain(db: number): void {
-    this.masterGain.gain.rampTo(Tone.dbToGain(db), 0.1);
+    const linearGain = Tone.dbToGain(db);
+    console.log(`🎛️ MASTER GAIN - Setting to: ${db} dB (${linearGain} linear)`);
+    console.log(`🎛️ AudioContext state:`, Tone.context.state);
+    console.log(`🎛️ Current master gain value:`, this.masterGain.gain.value);
+
+    // Only recreate if the gain is actually different
+    const currentLinearGain = this.masterGain.gain.value;
+    if (Math.abs(currentLinearGain - linearGain) < 0.001) {
+      console.log(`🎛️ Master gain already at target value, skipping recreation`);
+      return;
+    }
+
+    console.log(`🎛️ Recreating master gain node...`);
+
+    // Recreate the master gain node (this was the working method)
+    const oldMasterGain = this.masterGain;
+
+    // Create new master gain with the desired value
+    this.masterGain = new Tone.Gain(linearGain);
+
+    // Reconnect all existing layers to the new master gain
+    this.nodes.forEach((nodeGroup) => {
+      // Disconnect from old master gain
+      if (nodeGroup.nodes.filter) {
+        nodeGroup.nodes.filter.disconnect();
+        // Connect to new master gain
+        nodeGroup.nodes.filter.connect(this.masterGain);
+      }
+    });
+
+    // Reconnect master gain to output
+    this.masterGain.chain(this.meter, Tone.Destination);
+
+    // Dispose of old master gain
+    oldMasterGain.dispose();
+
+    console.log(`🎛️ Master gain recreated with value:`, this.masterGain.gain.value);
+    console.log(`🎛️ Master gain node connected:`, this.masterGain.context.state);
+  }
+
+  getMasterGainValue(): number {
+    return this.masterGain.gain.value;
   }
 
   getMeterData(): { rms: number; peak: number; left: number; right: number } {
