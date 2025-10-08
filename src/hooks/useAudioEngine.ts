@@ -7,7 +7,7 @@ import type { LayerParams, AudioState, MeterData } from '../lib/types';
 export const useAudioEngine = () => {
   const [audioState, setAudioState] = useState<AudioState>({
     isPlaying: false,
-    masterGainDb: -6, // Start with lower master gain to prevent distortion
+    masterGainDb: -12, // Start with lower master gain to prevent distortion
     sessionLength: null,
     elapsedTime: 0,
   });
@@ -121,15 +121,22 @@ export const useAudioEngine = () => {
         }
       });
 
-      setAudioState(prev => ({ ...prev, isPlaying: true, elapsedTime: 0 }));
+      // Initialize elapsed time based on session length
+      const initialElapsedTime = audioState.sessionLength ? audioState.sessionLength * 60 : 0;
+      setAudioState(prev => ({ ...prev, isPlaying: true, elapsedTime: initialElapsedTime }));
 
-      // Start session timer
-      if (audioState.sessionLength) {
-        sessionTimerRef.current = window.setInterval(() => {
-          setAudioState(prev => {
-            const newElapsedTime = prev.elapsedTime + 1;
-            if (newElapsedTime >= audioState.sessionLength! * 60) {
-              // Fade out playback when session time is reached
+      // Start session timer (always runs to track elapsed time)
+      sessionTimerRef.current = window.setInterval(() => {
+        setAudioState(prev => {
+          let newElapsedTime;
+
+          if (prev.sessionLength) {
+            // Count down from session length to zero
+            newElapsedTime = prev.elapsedTime - 1;
+
+            // Check if countdown reached zero
+            if (newElapsedTime <= 0) {
+              // Fade out playback when countdown reaches zero
               if (audioGraphRef.current) {
                 layers.forEach(layer => {
                   audioGraphRef.current!.fadeOutLayer(layer.id, 1);
@@ -154,10 +161,14 @@ export const useAudioEngine = () => {
 
               return prev;
             }
-            return { ...prev, elapsedTime: newElapsedTime };
-          });
-        }, 1000);
-      }
+          } else {
+            // Count up when no session length is set
+            newElapsedTime = prev.elapsedTime + 1;
+          }
+
+          return { ...prev, elapsedTime: newElapsedTime };
+        });
+      }, 1000);
 
       // Start meter updates
       meterTimerRef.current = window.setInterval(() => {

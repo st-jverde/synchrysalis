@@ -57,20 +57,25 @@ export const TransportBar = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showSessionOptions && sessionButtonRef.current && !sessionButtonRef.current.contains(event.target as Node)) {
+        // Check if the click is on the portal dropdown
+        const target = event.target as Element;
+        if (target && target.closest('[data-portal-dropdown]')) {
+          return; // Don't close if clicking on the dropdown
+        }
         setShowSessionOptions(false);
       }
     };
 
     if (showSessionOptions) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showSessionOptions]);
 
   return (
     <>
-    <div className="card mb-6 overflow-visible">
-      <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6">
+    <div className="card mb-6" style={{ overflow: 'visible' }}>
+      <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6" style={{ overflow: 'visible' }}>
         {/* Main Transport Controls */}
         <div className="flex items-center space-x-4">
           <button
@@ -90,13 +95,13 @@ export const TransportBar = ({
               {formatTime(audioState.elapsedTime)}
             </div>
             <div className="text-xs text-slate-400">
-              {audioState.sessionLength ? `Auto-stop: ${audioState.sessionLength}m` : 'No auto-stop'}
+              {audioState.sessionLength ? `Countdown: ${audioState.sessionLength}m` : 'No auto-stop'}
             </div>
           </div>
         </div>
 
         {/* Session Length Selector */}
-        <div className="relative overflow-visible">
+        <div className="relative" style={{ overflow: 'visible', zIndex: 100000 }}>
           <button
             ref={sessionButtonRef}
             onClick={() => setShowSessionOptions(!showSessionOptions)}
@@ -105,6 +110,7 @@ export const TransportBar = ({
             <span>⏱ Session</span>
             <span className="text-xs">▼</span>
           </button>
+
         </div>
 
         {/* Master Gain */}
@@ -155,12 +161,13 @@ export const TransportBar = ({
     {/* Portal Dropdown - Rendered to document body */}
     {showSessionOptions && createPortal(
       <div
-        className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[9999] min-w-[200px]"
+        className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[99999] min-w-[200px]"
         style={{
           top: `${dropdownPosition.top}px`,
           left: `${dropdownPosition.left}px`,
           width: `${dropdownPosition.width}px`
         }}
+        data-portal-dropdown
       >
         <div className="p-2">
           <button

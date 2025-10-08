@@ -66,20 +66,18 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showPresetMenu && presetButtonRef.current && !presetButtonRef.current.contains(event.target as Node)) {
+        // Check if the click is on the portal dropdown
+        const target = event.target as Element;
+        if (target && target.closest('[data-portal-dropdown]')) {
+          return; // Don't close if clicking on the dropdown
+        }
         setShowPresetMenu(false);
       }
     };
 
     if (showPresetMenu) {
-      // Use a small delay to prevent immediate closure from the button click
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
-      }, 50);
-
-      return () => {
-        clearTimeout(timeoutId);
-        document.removeEventListener('click', handleClickOutside);
-      };
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showPresetMenu]);
 
@@ -99,6 +97,7 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
             <span>{selectedPreset?.name || 'Select a preset...'}</span>
             <span className="text-xs">▼</span>
           </button>
+
         </div>
 
         {/* Action Buttons */}
@@ -171,12 +170,13 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
       {/* Portal Dropdown - Rendered to document body */}
       {showPresetMenu && createPortal(
         <div
-          className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[9999] max-h-96 overflow-y-auto"
+          className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[99999] max-h-96 overflow-y-auto"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`
           }}
+          data-portal-dropdown
         >
           <div className="p-2">
             {/* Built-in Presets */}
@@ -236,6 +236,7 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
         </div>,
         document.body
       )}
+
     </div>
   );
 };
