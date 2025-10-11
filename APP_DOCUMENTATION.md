@@ -119,22 +119,27 @@ Oscillators → Gain/Pan/Filter → Master Gain → Limiter → Speakers
 #### Transport Bar
 
 - **Start/Stop Controls**: Main playback control with user gesture requirement
-- **Session Timer**: Tracks elapsed time with optional auto-stop
-- **Master Gain**: Overall volume control with visual feedback
+- **Session Timer**: Tracks elapsed time with countdown/elapsed modes and optional auto-stop
+- **Editable Master Gain**: Overall volume control with click-to-edit labels and visual feedback
 - **Output Meter**: Real-time audio level display
+- **Session Protection**: Prevents session time changes during playback with smart notifications
+- **Smart Popovers**: Contextual notifications with auto-dismiss and visual feedback
 
 #### Layer Management
 
 - **Add Layers**: Create up to 8 independent entrainment layers
-- **Layer Cards**: Individual controls for each layer
+- **Layer Cards**: Individual controls for each layer with editable slider labels
 - **Mute/Solo**: Isolate or silence specific layers
 - **Duplicate**: Copy layer configurations
+- **Editable Controls**: All slider labels are click-to-edit for precise value input
 
 #### Preset System
 
-- **Built-in Presets**: Pre-configured entrainment patterns
+- **Built-in Presets**: Pre-configured entrainment patterns including:
+  - **Functional Presets**: Traditional brainwave entrainment patterns for focus, sleep, meditation
+  - **Musical & Dynamic Presets**: LFO-enabled presets for evolving, wave-like sounds
 - **Custom Presets**: Save and load user-created configurations
-- **Preset Management**: Organize and delete saved presets
+- **Preset Management**: Organize and delete saved presets with portal-based UI
 
 ## What You Can Do with the App
 
@@ -162,14 +167,25 @@ Oscillators → Gain/Pan/Filter → Master Gain → Limiter → Speakers
 - **Custom Flow States**: Personalized frequency combinations
 - **Cognitive Enhancement**: Optimized brainwave patterns for specific tasks
 
-### 5. Experimental Audio Design
+### 5. Musical & Dynamic Soundscapes
+
+- **Ocean Waves**: Gentle LFO-modulated binaural waves mimicking ocean rhythms
+- **Cosmic Drift**: Ethereal LFO-modulated frequencies creating space-like ambience
+- **Harmonic Resonance**: Musical harmonic series with LFO creating evolving overtones
+- **Aurora Borealis**: Dancing LFO patterns mimicking the northern lights
+- **Neural Symphony**: Complex LFO orchestration creating musical brainwave patterns
+- **Quantum Flow**: Rapid LFO modulation creating quantum-like frequency fluctuations
+- **Celestial Harmony**: Slow, majestic LFO patterns creating cosmic musical intervals
+
+### 6. Experimental Audio Design
 
 - **Multi-layer Compositions**: Complex entrainment patterns
 - **Custom Waveforms**: Different tone characteristics
 - **Modulation Effects**: Dynamic frequency and amplitude changes
 - **Spatial Audio**: Stereo panning and positioning
+- **Editable Controls**: Click-to-edit slider labels for precise parameter control
 
-### 6. Recording and Sharing
+### 7. Recording and Sharing
 
 - **Session Recording**: Capture your entrainment sessions
 - **Audio Export**: Download as WAV files
@@ -193,17 +209,65 @@ Oscillators → Gain/Pan/Filter → Master Gain → Limiter → Speakers
 
 ### User Experience
 
-- **Intuitive Interface**: Easy-to-use controls
+- **Intuitive Interface**: Easy-to-use controls with click-to-edit functionality
 - **Responsive Design**: Works on desktop and mobile
-- **Real-time Feedback**: Immediate audio response
-- **Preset System**: Quick access to common patterns
+- **Real-time Feedback**: Immediate audio response with visual validation
+- **Preset System**: Quick access to common patterns and musical soundscapes
+- **Session Protection**: Smart notifications prevent accidental changes during playback
+- **Portal-based UI**: Dropdowns and dialogs render above all content for better usability
 
 ### Advanced Controls
 
-- **ADSR Envelopes**: Professional audio shaping
-- **LFO Modulation**: Dynamic parameter changes
-- **Stereo Panning**: Spatial audio positioning
+- **ADSR Envelopes**: Professional audio shaping with editable parameters
+- **LFO Modulation**: Dynamic parameter changes with click-to-edit controls
+- **Stereo Panning**: Spatial audio positioning with precise value input
 - **Multiple Waveforms**: Different tone characteristics
+- **Editable Slider Labels**: Click-to-edit functionality for all numeric controls
+- **Real-time Validation**: Visual feedback for input validation and range clamping
+
+## Recent Feature Updates
+
+### Editable Slider Labels
+
+All slider controls now feature click-to-edit functionality:
+
+- **Click any slider label** to edit the value directly
+- **Type precise values** or continue using the slider
+- **Real-time validation** with visual feedback (blue border for valid, red for invalid)
+- **Keyboard shortcuts**: Enter to confirm, Escape to cancel
+- **Range clamping** ensures values stay within safe limits
+- **Consistent styling** matches the application's design language
+
+### Session Time Protection
+
+Enhanced session management with safety features:
+
+- **Session button disabled** during audio playback
+- **Visual feedback** with dimmed appearance and tooltip
+- **Smart popover notifications** when attempting to change session time while playing
+- **Auto-dismiss** popovers after 1 second
+- **Contextual messaging** explaining the need to stop before changing session time
+
+### Musical & Dynamic Presets
+
+New category of LFO-enabled presets for evolving soundscapes:
+
+- **Ocean Waves**: Gentle LFO-modulated binaural waves mimicking ocean rhythms
+- **Cosmic Drift**: Ethereal LFO-modulated frequencies creating space-like ambience
+- **Harmonic Resonance**: Musical harmonic series with LFO creating evolving overtones
+- **Aurora Borealis**: Dancing LFO patterns mimicking the northern lights
+- **Neural Symphony**: Complex LFO orchestration creating musical brainwave patterns
+- **Quantum Flow**: Rapid LFO modulation creating quantum-like frequency fluctuations
+- **Celestial Harmony**: Slow, majestic LFO patterns creating cosmic musical intervals
+
+### Portal-based UI Improvements
+
+Enhanced user interface with better layering:
+
+- **Portal rendering** for dropdowns and dialogs
+- **Proper z-index management** ensures UI elements appear above all content
+- **Consistent positioning** with dynamic calculation relative to trigger elements
+- **Improved click-outside handling** for better user experience
 
 ## Technical Implementation Details
 

@@ -27,10 +27,12 @@ Synchrysalis is a production-ready web application for experimenting with multi-
 ### 🎛️ Transport & Safety
 
 - Big Start/Stop button with user gesture requirement to unlock audio
-- Master volume control (-18 dB default) with hard limiter
+- **Editable master volume control** with click-to-edit labels
 - Fade-in/out on transport (2s in, 1.5s out)
 - Output meter with RMS/peak bars
-- Session length timer with optional auto-stop (10, 20, 30, 45, 60 minutes)
+- **Session length timer with countdown/elapsed modes**
+- **Session time protection** - prevents changes while audio is playing
+- **Smart popover notifications** when trying to change session time during playback
 
 ### 🎵 Layer System
 
@@ -40,23 +42,43 @@ Synchrysalis is a production-ready web application for experimenting with multi-
   - **Isochronic**: Single oscillator with amplitude modulation
   - **Monaural**: Two oscillators summed to create amplitude modulation
 - Per-layer controls:
-  - Carrier frequencies (80-600 Hz)
-  - Beat frequency (0.5-40 Hz)
+  - **Editable carrier frequencies** (80-600 Hz) with click-to-edit labels
+  - **Editable beat frequency** (0.5-40 Hz) with click-to-edit labels
   - Waveform selection (sine, triangle, square, sawtooth)
-  - Gain control (-48 to 0 dB)
-  - Panning (-1 to +1)
-  - Amplitude envelope (ADSR)
-  - Optional LFO modulation
+  - **Editable gain control** (-48 to 0 dB) with click-to-edit labels
+  - **Editable panning** (-1 to +1) with click-to-edit labels
+  - **Editable amplitude envelope** (ADSR) with click-to-edit labels
+  - **Editable LFO modulation** with click-to-edit labels
 
 ### 🎚️ Presets
 
 Built-in presets include:
 
-- **Alpha Focus**: 10 Hz binaural beats for enhanced focus
-- **Theta Deep Relax**: 5 Hz mix of binaural + isochronic for relaxation
-- **Delta Sleep**: 2 Hz low carriers for deep sleep
-- **Gamma Burst**: 40 Hz monaural with alpha support for cognitive enhancement
-- **Theta-Gamma Coupling**: 6 Hz + 40 Hz layers for learning and memory
+#### 🧠 Functional Presets
+
+- **Deep Focus Flow**: 12-15 Hz SMR range for sustained attention
+- **Sleep Induction Drift**: Delta 0.5-4 Hz with theta pre-ramp for deep sleep
+- **Creative Flow State**: Theta 6-7 Hz coupled with gamma 40 Hz for insight
+- **Stress Relief Meditation**: Alpha 8-10 Hz for calm alertness
+- **Morning Gamma Boost**: Gamma 40 Hz for cognitive activation
+- **Power Nap Reset**: Theta 6 Hz to Alpha 10 Hz for restorative naps
+- **Zen Stillness**: Theta 4-5 Hz for deep meditation
+- **Pre-Workout Ignite**: High beta 18-20 Hz for physical readiness
+- **Lucid Dream Gateway**: Theta 7 Hz to Delta 3 Hz cycling
+- **Mind Cleanse**: Alpha sweep 8-12 Hz cycling for stress reset
+
+#### 🎵 Musical & Dynamic Presets (LFO-Enabled)
+
+- **Ocean Waves**: Gentle LFO-modulated binaural waves mimicking ocean rhythms
+- **Cosmic Drift**: Ethereal LFO-modulated frequencies creating space-like ambience
+- **Harmonic Resonance**: Musical harmonic series with LFO creating evolving overtones
+- **Aurora Borealis**: Dancing LFO patterns mimicking the northern lights
+- **Neural Symphony**: Complex LFO orchestration creating musical brainwave patterns
+- **Quantum Flow**: Rapid LFO modulation creating quantum-like frequency fluctuations
+- **Celestial Harmony**: Slow, majestic LFO patterns creating cosmic musical intervals
+
+#### 🎛️ Utility
+
 - **Blank Layer**: Start with a single binaural layer
 
 ### 📹 Recording & Export
@@ -153,12 +175,24 @@ npm run preview
   - Envelope settings (Attack, Decay, Sustain, Release)
   - LFO modulation (rate, depth, target)
 
+### 🎛️ Editable Slider Labels
+
+All slider controls now feature **click-to-edit labels**:
+
+- **Click any slider label** to edit the value directly
+- **Type precise values** or drag the slider
+- **Real-time validation** with visual feedback
+- **Keyboard shortcuts**: Enter to confirm, Escape to cancel
+- **Range clamping** ensures values stay within safe limits
+
 ### Advanced Features
 
 - **Mute/Solo**: Use the 🔇 and 🎯 buttons to mute or solo individual layers
 - **Duplicate**: Click 📋 to create a copy of a layer
 - **Recording**: Use the recording controls in the header to capture your session
 - **Presets**: Save your custom configurations for later use
+- **Session Protection**: Session time changes are disabled during playback with helpful notifications
+- **Portal-based UI**: Dropdowns and dialogs render above all content for better usability
 
 ## 🏗️ Project Structure
 
@@ -166,9 +200,10 @@ npm run preview
 src/
 ├── components/
 │   ├── Disclaimer.tsx      # Safety modal
-│   ├── TransportBar.tsx    # Start/stop, timer, meter
-│   ├── PresetBar.tsx       # Preset management
-│   └── LayerCard.tsx       # Individual layer controls
+│   ├── TransportBar.tsx    # Start/stop, timer, meter, session protection
+│   ├── PresetBar.tsx       # Preset management with portal rendering
+│   ├── LayerCard.tsx       # Individual layer controls
+│   └── EditableSlider.tsx  # Reusable slider with click-to-edit labels
 ├── hooks/
 │   ├── useAudioEngine.ts   # Main audio management
 │   ├── useRecorder.ts      # Recording functionality
