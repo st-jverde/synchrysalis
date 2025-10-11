@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { LayerParams, LayerType, WaveformType } from '../lib/types';
 import { createDefaultLayer } from '../lib/presets';
+import { EditableSlider } from './EditableSlider';
 
 interface LayerCardProps {
   layer: LayerParams;
@@ -125,20 +126,16 @@ export const LayerCard = ({
         </div>
 
         {/* Beat Frequency */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
-            Beat: {layer.beatHz.toFixed(1)} Hz
-          </label>
-          <input
-            type="range"
-            min="0.5"
-            max="40"
-            step="0.1"
-            value={layer.beatHz}
-            onChange={(e) => onUpdate(layer.id, { beatHz: parseFloat(e.target.value) })}
-            className="slider"
-          />
-        </div>
+        <EditableSlider
+          value={layer.beatHz}
+          min={0.5}
+          max={40}
+          step={0.1}
+          onChange={(value) => onUpdate(layer.id, { beatHz: value })}
+          label="Beat"
+          unit=" Hz"
+          formatValue={(val) => val.toFixed(1)}
+        />
 
         {/* Waveform */}
         <div>
@@ -156,20 +153,16 @@ export const LayerCard = ({
         </div>
 
         {/* Gain */}
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">
-            Gain: {layer.gainDb.toFixed(1)} dB
-          </label>
-          <input
-            type="range"
-            min="-48"
-            max="0"
-            step="0.5"
-            value={layer.gainDb}
-            onChange={(e) => onUpdate(layer.id, { gainDb: parseFloat(e.target.value) })}
-            className="slider"
-          />
-        </div>
+        <EditableSlider
+          value={layer.gainDb}
+          min={-48}
+          max={0}
+          step={0.5}
+          onChange={(value) => onUpdate(layer.id, { gainDb: value })}
+          label="Gain"
+          unit=" dB"
+          formatValue={(val) => val.toFixed(1)}
+        />
       </div>
 
                 {/* Expanded Controls */}
@@ -181,50 +174,38 @@ export const LayerCard = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {layer.type === 'binaural' ? (
                 <>
-                                     <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1">
-                       Left: {layer.carrierLeft?.toFixed(0)} Hz
-                     </label>
-                    <input
-                      type="range"
-                      min="80"
-                      max="600"
-                      step="1"
-                      value={layer.carrierLeft || 200}
-                      onChange={(e) => onUpdate(layer.id, { carrierLeft: parseFloat(e.target.value) })}
-                      className="slider"
-                    />
-                  </div>
-                                     <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1">
-                       Right: {layer.carrierRight?.toFixed(0)} Hz
-                     </label>
-                    <input
-                      type="range"
-                      min="80"
-                      max="600"
-                      step="1"
-                      value={layer.carrierRight || 210}
-                      onChange={(e) => onUpdate(layer.id, { carrierRight: parseFloat(e.target.value) })}
-                      className="slider"
-                    />
-                  </div>
+                  <EditableSlider
+                    value={layer.carrierLeft || 200}
+                    min={80}
+                    max={600}
+                    step={1}
+                    onChange={(value) => onUpdate(layer.id, { carrierLeft: value })}
+                    label="Left"
+                    unit=" Hz"
+                    formatValue={(val) => val.toFixed(0)}
+                  />
+                  <EditableSlider
+                    value={layer.carrierRight || 210}
+                    min={80}
+                    max={600}
+                    step={1}
+                    onChange={(value) => onUpdate(layer.id, { carrierRight: value })}
+                    label="Right"
+                    unit=" Hz"
+                    formatValue={(val) => val.toFixed(0)}
+                  />
                 </>
               ) : (
-                                 <div>
-                   <label className="block text-sm font-medium text-slate-300 mb-1">
-                     Carrier: {layer.carrier?.toFixed(0)} Hz
-                   </label>
-                  <input
-                    type="range"
-                    min="80"
-                    max="600"
-                    step="1"
-                    value={layer.carrier || 200}
-                    onChange={(e) => onUpdate(layer.id, { carrier: parseFloat(e.target.value) })}
-                    className="slider"
-                  />
-                </div>
+                <EditableSlider
+                  value={layer.carrier || 200}
+                  min={80}
+                  max={600}
+                  step={1}
+                  onChange={(value) => onUpdate(layer.id, { carrier: value })}
+                  label="Carrier"
+                  unit=" Hz"
+                  formatValue={(val) => val.toFixed(0)}
+                />
               )}
             </div>
           </div>
@@ -233,94 +214,75 @@ export const LayerCard = ({
               <div>
                 <h4 className="text-sm font-semibold text-slate-200 mb-3">Panning</h4>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Pan: {layer.pan.toFixed(2)}
-                  </label>
-              <input
-                type="range"
-                min="-1"
-                max="1"
-                step="0.01"
-                value={layer.pan}
-                onChange={(e) => onUpdate(layer.id, { pan: parseFloat(e.target.value) })}
-                className="slider"
-              />
-                                <div className="flex justify-between text-xs text-slate-400 mt-1">
+                  <EditableSlider
+                    value={layer.pan}
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                    onChange={(value) => onUpdate(layer.id, { pan: value })}
+                    label="Pan"
+                    formatValue={(val) => val.toFixed(2)}
+                  />
+                  <div className="flex justify-between text-xs text-slate-400 mt-1">
                     <span>Left</span>
                     <span>Center</span>
                     <span>Right</span>
                   </div>
-            </div>
-          </div>
+                </div>
+              </div>
 
                         {/* Envelope */}
               <div>
                 <h4 className="text-sm font-semibold text-slate-200 mb-3">Envelope (ADSR)</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Attack: {layer.env.attack.toFixed(2)}s
-                  </label>
-                <input
-                  type="range"
-                  min="0.01"
-                  max="5"
-                  step="0.01"
-                  value={layer.env.attack}
-                  onChange={(e) => onUpdate(layer.id, {
-                    env: { ...layer.env, attack: parseFloat(e.target.value) }
-                  })}
-                  className="slider"
-                />
-              </div>
-                              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Decay: {layer.env.decay.toFixed(2)}s
-                  </label>
-                <input
-                  type="range"
-                  min="0.01"
-                  max="5"
-                  step="0.01"
-                  value={layer.env.decay}
-                  onChange={(e) => onUpdate(layer.id, {
-                    env: { ...layer.env, decay: parseFloat(e.target.value) }
-                  })}
-                  className="slider"
-                />
-              </div>
-                              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Sustain: {(layer.env.sustain * 100).toFixed(0)}%
-                  </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={layer.env.sustain}
-                  onChange={(e) => onUpdate(layer.id, {
-                    env: { ...layer.env, sustain: parseFloat(e.target.value) }
-                  })}
-                  className="slider"
-                />
-              </div>
-                              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Release: {layer.env.release.toFixed(2)}s
-                  </label>
-                <input
-                  type="range"
-                  min="0.01"
-                  max="10"
-                  step="0.01"
-                  value={layer.env.release}
-                  onChange={(e) => onUpdate(layer.id, {
-                    env: { ...layer.env, release: parseFloat(e.target.value) }
-                  })}
-                  className="slider"
-                />
-              </div>
+              <EditableSlider
+                value={layer.env.attack}
+                min={0.01}
+                max={5}
+                step={0.01}
+                onChange={(value) => onUpdate(layer.id, {
+                  env: { ...layer.env, attack: value }
+                })}
+                label="Attack"
+                unit="s"
+                formatValue={(val) => val.toFixed(2)}
+              />
+              <EditableSlider
+                value={layer.env.decay}
+                min={0.01}
+                max={5}
+                step={0.01}
+                onChange={(value) => onUpdate(layer.id, {
+                  env: { ...layer.env, decay: value }
+                })}
+                label="Decay"
+                unit="s"
+                formatValue={(val) => val.toFixed(2)}
+              />
+              <EditableSlider
+                value={layer.env.sustain}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(value) => onUpdate(layer.id, {
+                  env: { ...layer.env, sustain: value }
+                })}
+                label="Sustain"
+                unit="%"
+                formatValue={(val) => (val * 100).toFixed(0)}
+              />
+              <EditableSlider
+                value={layer.env.release}
+                min={0.01}
+                max={10}
+                step={0.01}
+                onChange={(value) => onUpdate(layer.id, {
+                  env: { ...layer.env, release: value }
+                })}
+                label="Release"
+                unit="s"
+                formatValue={(val) => val.toFixed(2)}
+              />
             </div>
           </div>
 
@@ -347,40 +309,32 @@ export const LayerCard = ({
 
               {layer.lfo?.enabled && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                     <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1">
-                       Rate: {layer.lfo.rateHz.toFixed(2)} Hz
-                     </label>
-                    <input
-                      type="range"
-                      min="0.05"
-                      max="0.5"
-                      step="0.01"
-                      value={layer.lfo.rateHz}
-                      onChange={(e) => onUpdate(layer.id, {
-                        lfo: { ...layer.lfo!, rateHz: parseFloat(e.target.value) }
-                      })}
-                      className="slider"
-                    />
-                  </div>
-                                     <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1">
-                       Depth: {layer.lfo.depth.toFixed(0)}%
-                     </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="30"
-                      step="1"
-                      value={layer.lfo.depth}
-                      onChange={(e) => onUpdate(layer.id, {
-                        lfo: { ...layer.lfo!, depth: parseFloat(e.target.value) }
-                      })}
-                      className="slider"
-                    />
-                  </div>
-                                     <div>
-                     <label className="block text-sm font-medium text-slate-300 mb-1">Target</label>
+                  <EditableSlider
+                    value={layer.lfo.rateHz}
+                    min={0.05}
+                    max={0.5}
+                    step={0.01}
+                    onChange={(value) => onUpdate(layer.id, {
+                      lfo: { ...layer.lfo!, rateHz: value }
+                    })}
+                    label="Rate"
+                    unit=" Hz"
+                    formatValue={(val) => val.toFixed(2)}
+                  />
+                  <EditableSlider
+                    value={layer.lfo.depth}
+                    min={0}
+                    max={30}
+                    step={1}
+                    onChange={(value) => onUpdate(layer.id, {
+                      lfo: { ...layer.lfo!, depth: value }
+                    })}
+                    label="Depth"
+                    unit="%"
+                    formatValue={(val) => val.toFixed(0)}
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1">Target</label>
                     <select
                       value={layer.lfo.target}
                       onChange={(e) => onUpdate(layer.id, {

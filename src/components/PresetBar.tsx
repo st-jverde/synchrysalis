@@ -112,9 +112,80 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
         </div>
       </div>
 
-            {/* Save Dialog */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+
+      {/* Portal Dropdown - Rendered to document body */}
+      {showPresetMenu && createPortal(
+        <div
+          className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[99999] max-h-96 overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`
+          }}
+          data-portal-dropdown
+        >
+          <div className="p-2">
+            {/* Built-in Presets */}
+            <div className="mb-4">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                Built-in Presets
+              </div>
+              {allPresets.filter(p => ['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'ocean-waves', 'cosmic-drift', 'harmonic-resonance', 'aurora-borealis', 'neural-symphony', 'quantum-flow', 'celestial-harmony', 'blank'].includes(p.id)).map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => {
+                    setSelectedPreset(preset);
+                    handleLoadPreset(preset);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 flex items-center justify-between text-slate-200"
+                >
+                  <div>
+                    <div className="font-medium">{preset.name}</div>
+                    <div className="text-xs text-slate-400">{preset.description}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* User Presets */}
+            {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'ocean-waves', 'cosmic-drift', 'harmonic-resonance', 'aurora-borealis', 'neural-symphony', 'quantum-flow', 'celestial-harmony', 'blank'].includes(p.id)).length > 0 && (
+              <div>
+                <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                  Your Presets
+                </div>
+                {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'ocean-waves', 'cosmic-drift', 'harmonic-resonance', 'aurora-borealis', 'neural-symphony', 'quantum-flow', 'celestial-harmony', 'blank'].includes(p.id)).map((preset) => (
+                  <div
+                    key={preset.id}
+                    className="flex items-center justify-between px-3 py-2 rounded text-sm hover:bg-slate-700/50"
+                  >
+                    <button
+                      onClick={() => {
+                        setSelectedPreset(preset);
+                        handleLoadPreset(preset);
+                      }}
+                      className="flex-1 text-left text-slate-200"
+                    >
+                      <div className="font-medium">{preset.name}</div>
+                      <div className="text-xs text-slate-400">{preset.description}</div>
+                    </button>
+                    <button
+                      onClick={() => handleDeletePreset(preset)}
+                      className="ml-2 text-rose-400 hover:text-rose-300 text-xs"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Portal Save Dialog - Rendered to document body */}
+      {showSaveDialog && createPortal(
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
           <div className="card max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4 text-slate-100">Save Preset</h3>
 
@@ -133,10 +204,10 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
                 />
               </div>
 
-                              <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Description (optional)
-                  </label>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Description (optional)
+                </label>
                 <textarea
                   value={saveDescription}
                   onChange={(e) => setSaveDescription(e.target.value)}
@@ -163,75 +234,6 @@ export const PresetBar = ({ onLoadPreset, currentLayers }: PresetBarProps) => {
                 Save
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Portal Dropdown - Rendered to document body */}
-      {showPresetMenu && createPortal(
-        <div
-          className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[99999] max-h-96 overflow-y-auto"
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
-          }}
-          data-portal-dropdown
-        >
-          <div className="p-2">
-            {/* Built-in Presets */}
-            <div className="mb-4">
-              <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                Built-in Presets
-              </div>
-              {allPresets.filter(p => ['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    setSelectedPreset(preset);
-                    handleLoadPreset(preset);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 flex items-center justify-between text-slate-200"
-                >
-                  <div>
-                    <div className="font-medium">{preset.name}</div>
-                    <div className="text-xs text-slate-400">{preset.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* User Presets */}
-            {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).length > 0 && (
-              <div>
-                <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Your Presets
-                </div>
-                {allPresets.filter(p => !['deep-focus-flow', 'sleep-induction-drift', 'creative-flow-state', 'stress-relief-meditation', 'morning-gamma-boost', 'power-nap-reset', 'zen-stillness', 'pre-workout-ignite', 'lucid-dream-gateway', 'mind-cleanse', 'blank'].includes(p.id)).map((preset) => (
-                  <div
-                    key={preset.id}
-                    className="flex items-center justify-between px-3 py-2 rounded text-sm hover:bg-slate-700/50"
-                  >
-                    <button
-                      onClick={() => {
-                        setSelectedPreset(preset);
-                        handleLoadPreset(preset);
-                      }}
-                      className="flex-1 text-left text-slate-200"
-                    >
-                      <div className="font-medium">{preset.name}</div>
-                      <div className="text-xs text-slate-400">{preset.description}</div>
-                    </button>
-                    <button
-                      onClick={() => handleDeletePreset(preset)}
-                      className="ml-2 text-rose-400 hover:text-rose-300 text-xs"
-                    >
-                      🗑
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>,
         document.body

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { AudioState, MeterData } from '../lib/types';
+import { EditableSlider } from './EditableSlider';
 
 interface TransportBarProps {
   audioState: AudioState;
@@ -21,7 +22,10 @@ export const TransportBar = ({
 }: TransportBarProps) => {
   const [showSessionOptions, setShowSessionOptions] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [showInfoPopover, setShowInfoPopover] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const sessionButtonRef = useRef<HTMLButtonElement>(null);
+  const popoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -41,6 +45,31 @@ export const TransportBar = ({
     return `${Math.min(100, normalized * 100)}%`;
   };
 
+  // Handle session button click
+  const handleSessionButtonClick = () => {
+    if (audioState.isPlaying) {
+      // Show info popover instead of dropdown
+      if (sessionButtonRef.current) {
+        const rect = sessionButtonRef.current.getBoundingClientRect();
+        setPopoverPosition({
+          top: rect.top + window.scrollY - 8,
+          left: rect.left + window.scrollX + rect.width / 2
+        });
+      }
+      setShowInfoPopover(true);
+
+      // Auto-dismiss after 1 second (much faster)
+      if (popoverTimeoutRef.current) {
+        clearTimeout(popoverTimeoutRef.current);
+      }
+      popoverTimeoutRef.current = setTimeout(() => {
+        setShowInfoPopover(false);
+      }, 1000);
+    } else {
+      setShowSessionOptions(!showSessionOptions);
+    }
+  };
+
   // Calculate dropdown position when menu is shown
   useEffect(() => {
     if (showSessionOptions && sessionButtonRef.current) {
@@ -52,6 +81,17 @@ export const TransportBar = ({
       });
     }
   }, [showSessionOptions]);
+
+  // Hide popover when audio stops
+  useEffect(() => {
+    if (!audioState.isPlaying && showInfoPopover) {
+      setShowInfoPopover(false);
+      if (popoverTimeoutRef.current) {
+        clearTimeout(popoverTimeoutRef.current);
+        popoverTimeoutRef.current = null;
+      }
+    }
+  }, [audioState.isPlaying, showInfoPopover]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,6 +111,15 @@ export const TransportBar = ({
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showSessionOptions]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (popoverTimeoutRef.current) {
+        clearTimeout(popoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -104,8 +153,14 @@ export const TransportBar = ({
         <div className="relative" style={{ overflow: 'visible', zIndex: 100000 }}>
           <button
             ref={sessionButtonRef}
-            onClick={() => setShowSessionOptions(!showSessionOptions)}
-            className="btn-secondary flex items-center space-x-2"
+            onClick={handleSessionButtonClick}
+            disabled={audioState.isPlaying}
+            className={`btn-secondary flex items-center space-x-2 transition-all duration-200 ${
+              audioState.isPlaying
+                ? 'opacity-50 cursor-not-allowed hover:bg-slate-700'
+                : 'hover:bg-slate-600'
+            }`}
+            title={audioState.isPlaying ? "Press stop before changing session time" : "Set session duration"}
           >
             <span>⏱ Session</span>
             <span className="text-xs">▼</span>
@@ -114,20 +169,17 @@ export const TransportBar = ({
         </div>
 
         {/* Master Gain */}
-        <div className="flex items-center space-x-3">
-          <label className="text-sm font-medium text-slate-300 whitespace-nowrap">
-            Master: {audioState.masterGainDb.toFixed(1)} dB
-          </label>
-          <input
-            type="range"
-            min="-99"
-            max="-3"
-            step="0.5"
-            value={audioState.masterGainDb}
-            onChange={(e) => onMasterGainChange(parseFloat(e.target.value))}
-            className="slider w-32"
-          />
-        </div>
+        <EditableSlider
+          value={audioState.masterGainDb}
+          min={-99}
+          max={-3}
+          step={0.5}
+          onChange={onMasterGainChange}
+          label="Master"
+          unit=" dB"
+          formatValue={(val) => val.toFixed(1)}
+          className="flex items-center space-x-3"
+        />
 
         {/* Output Meter */}
         <div className="flex items-center space-x-3">
@@ -196,6 +248,30 @@ export const TransportBar = ({
             </button>
           ))}
         </div>
+      </div>,
+      document.body
+    )}
+
+    {/* Info Popover - Rendered to document body */}
+    {showInfoPopover && createPortal(
+      <div
+        className="fixed bg-slate-700 backdrop-blur-sm border-2 border-indigo-500 rounded-2xl shadow-2xl z-[99999] px-5 py-4 max-w-xs"
+        style={{
+          top: `${popoverPosition.top}px`,
+          left: `${popoverPosition.left}px`,
+          transform: 'translateX(-50%)'
+        }}
+      >
+        <div className="flex items-center space-x-3">
+          <span className="text-indigo-400 text-xl">⚠️</span>
+          <div className="text-slate-100 text-sm font-semibold">
+            Press stop before changing the session time.
+          </div>
+        </div>
+        {/* Arrow pointing down */}
+        <div
+          className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-indigo-500"
+        />
       </div>,
       document.body
     )}
