@@ -46,7 +46,10 @@ function App() {
       const productivityPreset = builtInPresets.find(p => p.id === 'productivity');
       if (productivityPreset) {
         hasLoadedDefaultPreset.current = true;
-        loadPreset(productivityPreset.layers);
+        // Await the async loadPreset to ensure layers are loaded before component renders
+        loadPreset(productivityPreset.layers).catch(error => {
+          console.error('Failed to load Productivity preset on init:', error);
+        });
       } else {
         // Fallback to default layer if Productivity preset not found
         addLayer(createDefaultLayer('binaural'));

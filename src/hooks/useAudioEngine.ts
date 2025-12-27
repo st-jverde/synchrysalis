@@ -311,18 +311,21 @@ export const useAudioEngine = () => {
         stop();
       }
 
-      // Remove existing layers
-      layers.forEach(layer => {
-        audioGraphRef.current!.removeLayer(layer.id);
-      });
+      // Get current layers from state to avoid stale closure
+      setLayers(currentLayers => {
+        // Remove existing layers from audio graph
+        currentLayers.forEach(layer => {
+          audioGraphRef.current!.removeLayer(layer.id);
+        });
 
-      // Add new layers (with fresh IDs to avoid conflicts)
-      const freshLayers = presetLayers.map(layer => ({ ...layer, id: crypto.randomUUID() }));
-      freshLayers.forEach(layer => {
-        audioGraphRef.current!.addLayer(layer);
-      });
+        // Add new layers (with fresh IDs to avoid conflicts)
+        const freshLayers = presetLayers.map(layer => ({ ...layer, id: crypto.randomUUID() }));
+        freshLayers.forEach(layer => {
+          audioGraphRef.current!.addLayer(layer);
+        });
 
-      setLayers(freshLayers);
+        return freshLayers;
+      });
 
       // Force sync after loading preset to ensure master fader stays synchronized
       setTimeout(async () => {
@@ -343,7 +346,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to load preset:', error);
     }
-  }, [audioState.isPlaying, stop, initializeAudio, layers, audioState.masterGainDb, setMasterGain]);
+  }, [audioState.isPlaying, stop, initializeAudio, audioState.masterGainDb, setMasterGain]);
 
   // Cleanup on unmount
   useEffect(() => {
