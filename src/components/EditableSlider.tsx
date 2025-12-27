@@ -99,7 +99,7 @@ export const EditableSlider = ({
 
   return (
     <div className={className}>
-      <label className="block text-sm font-medium text-slate-300 mb-1">
+      <label className="block text-sm font-medium text-neutral-300 mb-1">
         {label}:{' '}
         {isEditing ? (
           <input
@@ -109,11 +109,11 @@ export const EditableSlider = ({
             onChange={handleInputChange}
             onBlur={handleInputSubmit}
             onKeyDown={handleKeyDown}
-            className={`inline-block w-16 px-1 py-0.5 text-sm bg-slate-800 border rounded transition-all duration-200 ${
+            className={`inline-block w-16 px-1 py-0.5 text-sm bg-neutral-800 border rounded transition-all duration-200 ${
               isValid
-                ? 'border-slate-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                ? 'border-neutral-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
                 : 'border-rose-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500'
-            } text-slate-100`}
+            } text-neutral-100`}
           />
         ) : (
           <span

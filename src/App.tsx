@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Disclaimer } from './components/Disclaimer';
 import { TransportBar } from './components/TransportBar';
 import { PresetBar } from './components/PresetBar';
 import { LayerCard } from './components/LayerCard';
 import { useAudioEngine } from './hooks/useAudioEngine';
-import { createDefaultLayer } from './lib/presets';
+import { createDefaultLayer, builtInPresets } from './lib/presets';
 import type { LayerParams } from './lib/types';
 
 function App() {
@@ -14,6 +14,7 @@ function App() {
     return dismissed !== 'true';
   });
   const [hasInteracted, setHasInteracted] = useState(false);
+  const hasLoadedDefaultPreset = useRef(false);
 
   const {
     audioState,
@@ -39,12 +40,19 @@ function App() {
     });
   };
 
-  // Initialize with a default layer if none exist
+  // Initialize with Productivity preset on first load
   useEffect(() => {
-    if (layers.length === 0) {
-      addLayer(createDefaultLayer('binaural'));
+    if (!hasLoadedDefaultPreset.current && layers.length === 0) {
+      const productivityPreset = builtInPresets.find(p => p.id === 'productivity');
+      if (productivityPreset) {
+        hasLoadedDefaultPreset.current = true;
+        loadPreset(productivityPreset.layers);
+      } else {
+        // Fallback to default layer if Productivity preset not found
+        addLayer(createDefaultLayer('binaural'));
+      }
     }
-  }, [layers.length, addLayer]);
+  }, [layers.length, loadPreset, addLayer]);
 
   const handleStart = async () => {
     if (!hasInteracted) {
@@ -76,19 +84,19 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-visible">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 overflow-visible">
       {/* Disclaimer Modal */}
       {showDisclaimer && (
         <Disclaimer onDismiss={() => setShowDisclaimer(false)} />
       )}
 
       {/* Header */}
-      <header className="bg-slate-800/50 backdrop-blur-sm shadow-lg border-b border-slate-700/50 overflow-visible">
+      <header className="bg-neutral-800/50 backdrop-blur-sm shadow-lg border-b border-neutral-700/50 overflow-visible">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-slate-100">Synchrysalis</h1>
-              <span className="text-sm text-slate-400">Brainwave Entrainment</span>
+              <h1 className="text-2xl font-bold text-neutral-100">Synchrysalis</h1>
+              <span className="text-sm text-neutral-400">Brainwave Entrainment</span>
             </div>
 
           </div>
@@ -116,7 +124,7 @@ function App() {
         {/* Layer Management */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-slate-100">
+            <h2 className="text-xl font-semibold text-neutral-100">
               Entrainment Layers ({layers.length}/8)
             </h2>
 
@@ -165,10 +173,10 @@ function App() {
         {layers.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎵</div>
-            <h3 className="text-lg font-medium text-slate-100 mb-2">
+            <h3 className="text-lg font-medium text-neutral-100 mb-2">
               No layers yet
             </h3>
-            <p className="text-slate-400 mb-4">
+            <p className="text-neutral-400 mb-4">
               Add your first entrainment layer to get started
             </p>
             <div className="flex justify-center space-x-2">
@@ -185,9 +193,9 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-800/50 backdrop-blur-sm border-t border-slate-700/50 mt-12">
+      <footer className="bg-neutral-800/50 backdrop-blur-sm border-t border-neutral-700/50 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-sm text-slate-400">
+          <div className="text-center text-sm text-neutral-400">
             <p>
               Synchrysalis - Experimental brainwave entrainment tool for entertainment and relaxation purposes only.
             </p>

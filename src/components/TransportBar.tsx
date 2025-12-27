@@ -37,7 +37,7 @@ export const TransportBar = ({
     if (value > -6) return 'bg-rose-500';
     if (value > -12) return 'bg-amber-500';
     if (value > -24) return 'bg-emerald-500';
-    return 'bg-slate-600';
+    return 'bg-neutral-600';
   };
 
   const getMeterHeight = (value: number): string => {
@@ -140,10 +140,10 @@ export const TransportBar = ({
 
           {/* Session Timer */}
           <div className="text-center">
-            <div className="text-2xl font-mono font-bold text-slate-100">
+            <div className="text-2xl font-mono font-bold text-neutral-100">
               {formatTime(audioState.elapsedTime)}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-neutral-400">
               {audioState.sessionLength ? `Countdown: ${audioState.sessionLength}m` : 'No auto-stop'}
             </div>
           </div>
@@ -157,8 +157,8 @@ export const TransportBar = ({
             disabled={audioState.isPlaying}
             className={`btn-secondary flex items-center space-x-2 transition-all duration-200 ${
               audioState.isPlaying
-                ? 'opacity-50 cursor-not-allowed hover:bg-slate-700'
-                : 'hover:bg-slate-600'
+                ? 'opacity-50 cursor-not-allowed hover:bg-neutral-700'
+                : 'hover:bg-neutral-600'
             }`}
             title={audioState.isPlaying ? "Press stop before changing session time" : "Set session duration"}
           >
@@ -183,26 +183,26 @@ export const TransportBar = ({
 
         {/* Output Meter */}
         <div className="flex items-center space-x-3">
-          <div className="text-sm font-medium text-slate-300 whitespace-nowrap">
+          <div className="text-sm font-medium text-neutral-300 whitespace-nowrap">
             Output
           </div>
           <div className="flex items-end space-x-1 h-12">
             {/* Left Channel */}
-            <div className="w-3 bg-slate-700 rounded-sm relative">
+            <div className="w-3 bg-neutral-700 rounded-sm relative">
               <div
                 className={`absolute bottom-0 w-full rounded-sm transition-all duration-100 ${getMeterColor(meterData.left)}`}
                 style={{ height: getMeterHeight(meterData.left) }}
               />
             </div>
             {/* Right Channel */}
-            <div className="w-3 bg-slate-700 rounded-sm relative">
+            <div className="w-3 bg-neutral-700 rounded-sm relative">
               <div
                 className={`absolute bottom-0 w-full rounded-sm transition-all duration-100 ${getMeterColor(meterData.right)}`}
                 style={{ height: getMeterHeight(meterData.right) }}
               />
             </div>
           </div>
-          <div className="text-xs text-slate-400 font-mono">
+          <div className="text-xs text-neutral-400 font-mono">
             {meterData.peak > -59.9 ? `${meterData.peak.toFixed(1)} dB` : '-∞'}
           </div>
         </div>
@@ -213,7 +213,7 @@ export const TransportBar = ({
     {/* Portal Dropdown - Rendered to document body */}
     {showSessionOptions && createPortal(
       <div
-        className="fixed bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-2xl z-[99999] min-w-[200px]"
+        className="fixed bg-neutral-800/90 backdrop-blur-sm border border-neutral-700/50 rounded-lg shadow-2xl z-[99999] min-w-[200px]"
         style={{
           top: `${dropdownPosition.top}px`,
           left: `${dropdownPosition.left}px`,
@@ -227,7 +227,7 @@ export const TransportBar = ({
               onSessionLengthChange(null);
               setShowSessionOptions(false);
             }}
-            className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
+            className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-neutral-700/50 text-neutral-200 ${
               audioState.sessionLength === null ? 'bg-indigo-900/50 text-indigo-300' : ''
             }`}
           >
@@ -240,7 +240,7 @@ export const TransportBar = ({
                 onSessionLengthChange(minutes);
                 setShowSessionOptions(false);
               }}
-              className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-slate-700/50 text-slate-200 ${
+              className={`w-full text-left px-3 py-2 rounded text-sm hover:bg-neutral-700/50 text-neutral-200 ${
                 audioState.sessionLength === minutes ? 'bg-indigo-900/50 text-indigo-300' : ''
               }`}
             >
@@ -255,7 +255,7 @@ export const TransportBar = ({
     {/* Info Popover - Rendered to document body */}
     {showInfoPopover && createPortal(
       <div
-        className="fixed bg-slate-700 backdrop-blur-sm border-2 border-indigo-500 rounded-2xl shadow-2xl z-[99999] px-5 py-4 max-w-xs"
+        className="fixed bg-neutral-700 backdrop-blur-sm border-2 border-indigo-500 rounded-2xl shadow-2xl z-[99999] px-5 py-4 max-w-xs"
         style={{
           top: `${popoverPosition.top}px`,
           left: `${popoverPosition.left}px`,
@@ -264,7 +264,7 @@ export const TransportBar = ({
       >
         <div className="flex items-center space-x-3">
           <span className="text-indigo-400 text-xl">⚠️</span>
-          <div className="text-slate-100 text-sm font-semibold">
+          <div className="text-neutral-100 text-sm font-semibold">
             Press stop before changing the session time.
           </div>
         </div>

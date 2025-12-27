@@ -18,15 +18,15 @@ export const Disclaimer = ({ onDismiss }: DisclaimerProps) => {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-100 mb-2">
+          <h2 className="text-2xl font-bold text-neutral-100 mb-2">
             ⚠️ Important Safety Information
           </h2>
-          <p className="text-slate-400">
+          <p className="text-neutral-400">
             Please read this information before using Synchrysalis
           </p>
         </div>
 
-        <div className="space-y-4 text-sm text-slate-300">
+        <div className="space-y-4 text-sm text-neutral-300">
           <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-4 backdrop-blur-sm">
             <h3 className="font-semibold text-amber-300 mb-2">🩺 Medical Disclaimer</h3>
             <p className="text-amber-200">
@@ -68,12 +68,12 @@ export const Disclaimer = ({ onDismiss }: DisclaimerProps) => {
         </div>
 
         <div className="mt-6 flex items-center justify-between">
-          <label className="flex items-center space-x-2 text-sm text-slate-400">
+          <label className="flex items-center space-x-2 text-sm text-neutral-400">
             <input
               type="checkbox"
               checked={dontShowAgain}
               onChange={(e) => setDontShowAgain(e.target.checked)}
-              className="rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-neutral-600 bg-neutral-800 text-indigo-600 focus:ring-indigo-500"
             />
             <span>Don't show this again</span>
           </label>

@@ -11,7 +11,7 @@ export interface EnvelopeParams {
 
 export interface LFOParams {
   enabled: boolean;
-  rateHz: number;   // 0.05-0.5 Hz
+  rateHz: number;   // 0.01-0.5 Hz
   depth: number;    // 0-30%
   target: 'beat' | 'gain';
 }
