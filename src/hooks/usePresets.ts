@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Preset, LayerParams } from '../lib/types';
 import { builtInPresets } from '../lib/presets';
 
@@ -6,7 +6,6 @@ const USER_PRESETS_KEY = 'synchrysalis_user_presets';
 
 export const usePresets = () => {
   const [userPresets, setUserPresets] = useState<Preset[]>([]);
-  const [allPresets, setAllPresets] = useState<Preset[]>([]);
 
   // Load user presets from localStorage on mount
   useEffect(() => {
@@ -21,10 +20,10 @@ export const usePresets = () => {
     }
   }, []);
 
-  // Update all presets when user presets change
-  useEffect(() => {
-    setAllPresets([...builtInPresets, ...userPresets]);
-  }, [userPresets]);
+  const allPresets = useMemo(
+    () => [...builtInPresets, ...userPresets],
+    [userPresets]
+  );
 
   // Save user presets to localStorage
   const saveUserPresets = useCallback((presets: Preset[]) => {

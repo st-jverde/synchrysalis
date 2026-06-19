@@ -168,7 +168,7 @@ export const builtInPresets: Preset[] = [
         carrierRight: 33,
         beatHz: 3,
         waveform: 'sine',
-        gainDb: -16,
+        gainDb: -10,
         pan: 0,
         env: { attack: 0.8, decay: 0.4, sustain: 0.9, release: 1.5 },
         lfo: { enabled: true, rateHz: 0.03, depth: 12, target: 'beat' },
@@ -182,7 +182,7 @@ export const builtInPresets: Preset[] = [
         carrierRight: 56,
         beatHz: 6,
         waveform: 'sine',
-        gainDb: -20,
+        gainDb: -16,
         pan: 0,
         env: { attack: 0.5, decay: 0.3, sustain: 0.95, release: 1.0 },
         lfo: { enabled: true, rateHz: 0.03, depth: 10, target: 'beat' },
@@ -195,7 +195,7 @@ export const builtInPresets: Preset[] = [
         carrier: 60,
         beatHz: 0.1,
         waveform: 'sine',
-        gainDb: -30,
+        gainDb: -24,
         pan: 0,
         env: { attack: 1.2, decay: 0.6, sustain: 0.9, release: 2.5 },
         lfo: { enabled: true, rateHz: 0.01, depth: 20, target: 'gain' },
@@ -208,20 +208,7 @@ export const builtInPresets: Preset[] = [
         carrier: 432,
         beatHz: 0.1,
         waveform: 'sine',
-        gainDb: -42,
-        pan: 0,
-        env: { attack: 3.45, decay: 0.3, sustain: 0.9, release: 1.2 },
-        lfo: { enabled: true, rateHz: 0.03, depth: 30, target: 'gain' },
-        muted: false,
-        solo: false,
-      },
-      {
-        id: crypto.randomUUID(),
-        type: 'isochronic',
-        carrier: 432,
-        beatHz: 0.1,
-        waveform: 'sine',
-        gainDb: -42,
+        gainDb: -38,
         pan: 0,
         env: { attack: 3.45, decay: 0.3, sustain: 0.9, release: 1.2 },
         lfo: { enabled: true, rateHz: 0.03, depth: 30, target: 'gain' },
@@ -234,7 +221,7 @@ export const builtInPresets: Preset[] = [
         carrier: 256,
         beatHz: 0.2,
         waveform: 'sine',
-        gainDb: -48,
+        gainDb: -30,
         pan: 0,
         env: { attack: 3.72, decay: 0.05, sustain: 0.9, release: 1.52 },
         lfo: { enabled: true, rateHz: 0.01, depth: 20, target: 'gain' },
@@ -247,7 +234,7 @@ export const builtInPresets: Preset[] = [
         carrier: 288,
         beatHz: 0.1,
         waveform: 'sine',
-        gainDb: -46,
+        gainDb: -32,
         pan: 0,
         env: { attack: 4, decay: 1, sustain: 0.46, release: 1.5 },
         lfo: { enabled: true, rateHz: 0.06, depth: 30, target: 'gain' },
@@ -462,15 +449,15 @@ export const builtInPresets: Preset[] = [
   {
     id: 'zen-stillness',
     name: 'Zen Stillness',
-    description: 'Theta 4-5 Hz for deep meditation and inward awareness',
+    description: 'Ultra-slow 0.1 Hz isochronic pulse with 5 Hz theta binaural for deep stillness and meditation',
     layers: [
       {
         id: crypto.randomUUID(),
         type: 'isochronic',
         carrier: 200,
-        beatHz: 4.5,
+        beatHz: 0.1,
         waveform: 'sine',
-        gainDb: -18,
+        gainDb: -14,
         pan: 0,
         env: { attack: 0.5, decay: 0.3, sustain: 0.95, release: 1.5 },
         lfo: { enabled: false, rateHz: 0.1, depth: 10, target: 'beat' },
@@ -484,7 +471,7 @@ export const builtInPresets: Preset[] = [
         carrierRight: 205,
         beatHz: 5,
         waveform: 'sine',
-        gainDb: -26,
+        gainDb: -20,
         pan: 0,
         env: { attack: 0.3, decay: 0.2, sustain: 0.9, release: 1.0 },
         lfo: { enabled: false, rateHz: 0.1, depth: 10, target: 'beat' },
@@ -748,10 +735,11 @@ export const builtInPresets: Preset[] = [
       {
         id: crypto.randomUUID(),
         type: 'isochronic',
-        carrier: 250,
-        beatHz: 7.5,
+        carrier: 190,
+        // other carrier is 250, so the binaural is 190 and 250
+        beatHz: 0.1,
         waveform: 'triangle',
-        gainDb: -21,
+        gainDb: -22,
         pan: 0,
         env: { attack: 0.6, decay: 0.3, sustain: 0.9, release: 1.0 },
         lfo: { enabled: true, rateHz: 0.25, depth: 20, target: 'beat' },
@@ -939,6 +927,10 @@ export const builtInPresets: Preset[] = [
     ]
   }
 ];
+
+const builtInPresetIds = new Set(builtInPresets.map(p => p.id));
+
+export const isBuiltInPreset = (id: string): boolean => builtInPresetIds.has(id);
 
 // Helper functions for parameter validation and normalization
 export const clampValue = (value: number, min: number, max: number): number => {

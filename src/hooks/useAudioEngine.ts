@@ -24,20 +24,18 @@ export const useAudioEngine = () => {
   const sessionTimerRef = useRef<number | null>(null);
   const meterTimerRef = useRef<number | null>(null);
   const isInitializedRef = useRef(false);
+  const layersRef = useRef<LayerParams[]>([]);
+  const audioStateRef = useRef(audioState);
+  layersRef.current = layers;
+  audioStateRef.current = audioState;
 
   // Set master gain
   const setMasterGain = useCallback(async (db: number) => {
-    // Always update the state first
     setAudioState(prev => ({ ...prev, masterGainDb: db }));
 
-    // Then update the audio graph if it exists
     if (audioGraphRef.current) {
       try {
-        // Force resume AudioContext every time we adjust master gain
-        console.log('🎵 AudioContext state before resume:', Tone.context.state);
         await Tone.context.resume();
-        console.log('🎵 AudioContext state after resume:', Tone.context.state);
-
         audioGraphRef.current.setMasterGain(db);
       } catch (error) {
         console.error('Failed to set master gain:', error);
@@ -54,50 +52,20 @@ export const useAudioEngine = () => {
 
     console.log(`🎵 INIT - Starting initialization...`);
     try {
-      audioGraphRef.current = new AudioGraphManager();
+      audioGraphRef.current = new AudioGraphManager(audioStateRef.current.masterGainDb);
       await audioGraphRef.current.initialize();
-
-      // Only set master gain if it's different from the constructor default
-      // This prevents unnecessary recreation and ensures sync between React state and audio graph
-      console.log(`🎵 INIT - React state masterGainDb: ${audioState.masterGainDb}`);
-      if (audioState.masterGainDb !== -18) {
-        console.log(`🎵 INIT - Setting master gain to ${audioState.masterGainDb} (different from default -18dB)`);
-        audioGraphRef.current.setMasterGain(audioState.masterGainDb);
-      } else {
-        console.log(`🎵 INIT - Skipping master gain set (already at default -18dB)`);
-        // Log the actual master gain value to verify it's correct
-        try {
-          const currentLinearGain = audioGraphRef.current.getMasterGainValue();
-          const currentDbGain = 20 * Math.log10(currentLinearGain);
-          console.log(`🎵 INIT - Actual master gain in audio graph: ${currentDbGain.toFixed(1)} dB (${currentLinearGain.toFixed(6)} linear)`);
-        } catch (error) {
-          console.error(`🎵 INIT - Failed to get master gain value:`, error);
-        }
-      }
 
       isInitializedRef.current = true;
 
-      // Force sync by moving the master fader slightly after initialization
-      // This ensures the React state and audio graph are perfectly synchronized
-      setTimeout(async () => {
-        console.log(`🎵 SYNC - Forcing master gain sync...`);
-        const originalGain = audioState.masterGainDb;
-        const tempGain = originalGain - 0.5; // Move down 0.5dB
-
-        // Set to temp value
-        await setMasterGain(tempGain);
-
-        // Wait a moment then set back to original
-        setTimeout(async () => {
-          await setMasterGain(originalGain);
-          console.log(`🎵 SYNC - Master gain sync complete at ${originalGain}dB`);
-        }, 100);
-      }, 1000);
+      // Sync layers that were loaded before audio was initialized (e.g. default preset on page load)
+      layersRef.current.forEach(layer => {
+        audioGraphRef.current!.addLayer(layer);
+      });
 
     } catch (error) {
       console.error('Failed to initialize audio:', error);
     }
-  }, [audioState.masterGainDb, setMasterGain]);
+  }, []);
 
   // Start audio playback
   const start = useCallback(async () => {
@@ -111,11 +79,13 @@ export const useAudioEngine = () => {
       // Ensure AudioContext is resumed before starting playback
       if (Tone.context.state === 'suspended') {
         await Tone.context.resume();
-        console.log('🎵 AudioContext resumed for playback');
       }
 
+      // Ensure master gain is correct before starting layers
+      audioGraphRef.current.setMasterGain(audioStateRef.current.masterGainDb, 0);
+
       // Start all layers
-      layers.forEach(layer => {
+      layersRef.current.forEach(layer => {
         if (!layer.muted) {
           audioGraphRef.current!.startLayer(layer.id, layer.gainDb);
         }
@@ -138,7 +108,7 @@ export const useAudioEngine = () => {
             if (newElapsedTime <= 0) {
               // Fade out playback when countdown reaches zero
               if (audioGraphRef.current) {
-                layers.forEach(layer => {
+                layersRef.current.forEach(layer => {
                   audioGraphRef.current!.fadeOutLayer(layer.id, 1);
                 });
               }
@@ -181,7 +151,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to start audio:', error);
     }
-  }, [layers, audioState.sessionLength, initializeAudio]);
+  }, [audioState.sessionLength, initializeAudio]);
 
   // Stop audio playback with fade out
   const stop = useCallback(() => {
@@ -198,7 +168,7 @@ export const useAudioEngine = () => {
       }
 
       // Fade out all layers over 1 second (50% quicker)
-      layers.forEach(layer => {
+      layersRef.current.forEach(layer => {
         audioGraphRef.current!.fadeOutLayer(layer.id, 1);
       });
 
@@ -220,7 +190,7 @@ export const useAudioEngine = () => {
     } catch (error) {
       console.error('Failed to stop audio:', error);
     }
-  }, [layers]);
+  }, []);
 
   // Add a new layer
   const addLayer = useCallback(async (params: LayerParams) => {
@@ -297,56 +267,31 @@ export const useAudioEngine = () => {
     setAudioState(prev => ({ ...prev, sessionLength: minutes }));
   }, []);
 
-  // Load preset
-  const loadPreset = useCallback(async (presetLayers: LayerParams[]) => {
-    if (!audioGraphRef.current || !isInitializedRef.current) {
-      await initializeAudio();
-    }
-
-    if (!audioGraphRef.current) return;
-
+  // Load preset — returns true on success. Does not initialize audio; that happens on user gesture.
+  const loadPreset = useCallback(async (presetLayers: LayerParams[]): Promise<boolean> => {
     try {
-      // Stop current playback
       if (audioState.isPlaying) {
         stop();
       }
 
-      // Get current layers from state to avoid stale closure
-      setLayers(currentLayers => {
-        // Remove existing layers from audio graph
-        currentLayers.forEach(layer => {
+      const freshLayers = presetLayers.map(layer => ({ ...layer, id: crypto.randomUUID() }));
+
+      if (audioGraphRef.current && isInitializedRef.current) {
+        layersRef.current.forEach(layer => {
           audioGraphRef.current!.removeLayer(layer.id);
         });
-
-        // Add new layers (with fresh IDs to avoid conflicts)
-        const freshLayers = presetLayers.map(layer => ({ ...layer, id: crypto.randomUUID() }));
         freshLayers.forEach(layer => {
           audioGraphRef.current!.addLayer(layer);
         });
+      }
 
-        return freshLayers;
-      });
-
-      // Force sync after loading preset to ensure master fader stays synchronized
-      setTimeout(async () => {
-        console.log(`🎵 PRESET SYNC - Forcing master gain sync after preset load...`);
-        const originalGain = audioState.masterGainDb;
-        const tempGain = originalGain - 0.5; // Move down 0.5dB
-
-        // Set to temp value
-        await setMasterGain(tempGain);
-
-        // Wait a moment then set back to original
-        setTimeout(async () => {
-          await setMasterGain(originalGain);
-          console.log(`🎵 PRESET SYNC - Master gain sync complete at ${originalGain}dB`);
-        }, 100);
-      }, 500); // Shorter delay for preset changes
-
+      setLayers(freshLayers);
+      return true;
     } catch (error) {
       console.error('Failed to load preset:', error);
+      return false;
     }
-  }, [audioState.isPlaying, stop, initializeAudio, audioState.masterGainDb, setMasterGain]);
+  }, [audioState.isPlaying, stop]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -359,7 +304,9 @@ export const useAudioEngine = () => {
       }
       if (audioGraphRef.current) {
         audioGraphRef.current.dispose();
+        audioGraphRef.current = null;
       }
+      isInitializedRef.current = false;
     };
   }, []);
 

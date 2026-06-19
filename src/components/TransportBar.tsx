@@ -10,6 +10,7 @@ interface TransportBarProps {
   onStop: () => void;
   onMasterGainChange: (db: number) => void;
   onSessionLengthChange: (minutes: number | null) => void;
+  layout?: 'default' | 'spacious';
 }
 
 export const TransportBar = ({
@@ -19,6 +20,7 @@ export const TransportBar = ({
   onStop,
   onMasterGainChange,
   onSessionLengthChange,
+  layout = 'default',
 }: TransportBarProps) => {
   const [showSessionOptions, setShowSessionOptions] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -121,17 +123,25 @@ export const TransportBar = ({
     };
   }, []);
 
+  const isSpacious = layout === 'spacious';
+
   return (
     <>
-    <div className="card mb-6" style={{ overflow: 'visible' }}>
-      <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6" style={{ overflow: 'visible' }}>
+    <div className={isSpacious ? '' : 'card mb-6'} style={{ overflow: 'visible' }}>
+      <div className={
+        isSpacious
+          ? 'flex flex-col items-center space-y-12'
+          : 'flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6'
+      } style={{ overflow: 'visible' }}>
         {/* Main Transport Controls */}
-        <div className="flex items-center space-x-4">
+        <div className={`flex items-center ${isSpacious ? 'space-x-10' : 'space-x-4'}`}>
           <button
             onClick={audioState.isPlaying ? onStop : onStart}
-            className={`px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`rounded-xl font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              isSpacious ? 'px-12 py-5 text-2xl' : 'px-8 py-3 text-lg'
+            } ${
               audioState.isPlaying
-                ? 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
+                ? 'bg-red-900/70 hover:bg-red-900/90 text-red-100 focus:ring-red-800/50'
                 : 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500'
             }`}
           >
@@ -140,17 +150,21 @@ export const TransportBar = ({
 
           {/* Session Timer */}
           <div className="text-center">
-            <div className="text-2xl font-mono font-bold text-neutral-100">
+            <div className={`font-mono font-bold text-neutral-100 ${isSpacious ? 'text-5xl' : 'text-2xl'}`}>
               {formatTime(audioState.elapsedTime)}
             </div>
-            <div className="text-xs text-neutral-400">
+            <div className={`text-neutral-400 ${isSpacious ? 'text-sm mt-1' : 'text-xs'}`}>
               {audioState.sessionLength ? `Countdown: ${audioState.sessionLength}m` : 'No auto-stop'}
             </div>
           </div>
         </div>
 
+        {/* Secondary Controls Row */}
+        <div className={`flex items-center ${isSpacious ? 'space-x-12' : 'space-x-0'} ${
+          isSpacious ? '' : 'flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 w-full lg:w-auto justify-between lg:justify-end'
+        }`}>
         {/* Session Length Selector */}
-        <div className="relative" style={{ overflow: 'visible', zIndex: 100000 }}>
+        <div className="relative" style={{ overflow: 'visible' }}>
           <button
             ref={sessionButtonRef}
             onClick={handleSessionButtonClick}
@@ -205,6 +219,7 @@ export const TransportBar = ({
           <div className="text-xs text-neutral-400 font-mono">
             {meterData.peak > -59.9 ? `${meterData.peak.toFixed(1)} dB` : '-∞'}
           </div>
+        </div>
         </div>
       </div>
 

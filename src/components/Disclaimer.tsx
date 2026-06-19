@@ -15,7 +15,7 @@ export const Disclaimer = ({ onDismiss }: DisclaimerProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100000] p-4">
       <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-neutral-100 mb-2">
